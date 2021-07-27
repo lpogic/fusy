@@ -13,7 +13,7 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        args = new String[]{"skrypt.txt"};
+//        args = new String[]{"skrypt.txt"};
         String fus;
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
@@ -34,6 +34,7 @@ public class Main {
                 import static fusy.FusEnvironment.*;
                 import static java.lang.Thread.*;
                 import suite.suite.$uite;
+                import suite.suite.action.*;
                 
                 class fusy {
                     public static void main(String[] args) throws Exception {
