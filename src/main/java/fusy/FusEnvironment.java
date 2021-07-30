@@ -101,48 +101,48 @@ public class FusEnvironment {
         readln("Kliknij ENTER aby kontynuowac");
     }
 
+    public static Subject set(Object ... o) {
+        return Suite.set(o);
+    }
+
+    public static Subject list(Object ... o) {
+        return Suite.add(o);
+    }
+
     public static Subject mix(Series s) {
         var list = Sequence.ofEntire(s).toList();
         Collections.shuffle(list);
         return Suite.alter(list);
     }
 
-    public static Series range(int from, int to) {
-        return from < to ? () -> new Browser() {
+    public static Sequence<Integer> range(int from, int to) {
+        return from < to ? () -> new Iterator<>() {
             int f = from;
             public boolean hasNext() {
                 return f <= to;
             }
 
-            public Subject next() {
-                return $(f++);
+            public Integer next() {
+                return f++;
             }
-        } : () -> new Browser() {
+        } : () -> new Iterator<>() {
             int f = from;
             public boolean hasNext() {
                 return f >= to;
             }
 
-            public Subject next() {
-                return $(f--);
+            public Integer next() {
+                return f--;
             }
         };
     }
 
-    public static Series rail(Iterable<?> k, Series v) {
-        return () -> new Browser() {
-            final Iterator<?> ki = k.iterator();
-            final Browser vb = v.iterator();
-
-            @Override
-            public boolean hasNext() {
-                return ki.hasNext() && vb.hasNext();
-            }
-
-            @Override
-            public Subject next() {
-                return Suite.inset(ki.next(), vb.next());
-            }
-        };
+    public static void swap(Subject s, Object k1, Object k2) {
+        var s1 = s.in(k1).get();
+        var s2 = s.in(k2).get();
+        if(s1.absent()) System.err.println("Subject in " + k1 + "is absent");
+        if(s2.absent()) System.err.println("Subject in " + k2 + "is absent");
+        s.inset(k1, s2);
+        s.inset(k2, s1);
     }
 }

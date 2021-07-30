@@ -12,16 +12,45 @@ import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) {
 //        args = new String[]{"skrypt.txt"};
-        String fus;
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
-            System.out.print("Podaj fus: ");
-            fus = scanner.nextLine();
+            while(true) {
+                System.out.print("fusy> ");
+                String str = scanner.nextLine();
+                switch (str.trim()) {
+                    case "" -> {}
+                    case "help" -> {
+                        System.out.println("""
+                                help - dostepne opcje
+                                exit - wyjscie
+                                Inne napisy interpretowane sa jako sciezka do pliku ze skryptem i uruchamiane
+                                """);
+                    }
+                    case "exit" -> {
+                        return;
+                    }
+                    default -> {
+                        try {
+                            str = str.replaceAll("\"", "");
+                            run(str);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
         } else {
-            fus = args[0];
+            try {
+                run(args[0]);
+            } catch (Exception ignored) {
+                ignored.printStackTrace();
+            }
         }
+    }
+
+    static void run(String fus) throws IOException, InterruptedException {
         var proc = new FusBodyProcessor(null);
         proc.getReady();
         Files.readAllLines(Path.of(fus)).forEach(str -> {
@@ -35,6 +64,8 @@ public class Main {
                 import static java.lang.Thread.*;
                 import suite.suite.$uite;
                 import suite.suite.action.*;
+                import suite.suite.Subject;
+                import suite.suite.util.Series;
                 
                 class fusy {
                     public static void main(String[] args) throws Exception {
@@ -43,8 +74,8 @@ public class Main {
                     
                     fusy() {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                        + "}"
-                        + $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                + "}"
+                + $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
         var output = new FileOutputStream("fusy.java");
