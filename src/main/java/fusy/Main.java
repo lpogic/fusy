@@ -13,7 +13,7 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
-//        args = new String[]{"skrypt.txt"};
+        args = new String[]{"skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {
@@ -60,22 +60,24 @@ public class Main {
         var $program = proc.finish();
         var program = """
                 import java.nio.file.*;
-                import static fusy.FusEnvironment.*;
+                import static fusy.Fusy.*;
+                import static fusy.FusyFun.*;
                 import static java.lang.Thread.*;
                 import suite.suite.$uite;
                 import suite.suite.action.*;
                 import suite.suite.Subject;
                 import suite.suite.util.Series;
+                import java.util.Objects;
                 
                 class fusy {
                     public static void main(String[] args) throws Exception {
                         new fusy();
                     }
                     
-                    fusy() {
+                    fusy() { //// STATEMENTS ////
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                + "}"
-                + $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                + "}\n//// DEFINITIONS ////\n" +
+                $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
         var output = new FileOutputStream("fusy.java");
