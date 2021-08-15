@@ -94,8 +94,24 @@ public class Fusy {
         System.out.println(o);
     }
 
+    public static void println() {
+        System.out.println();
+    }
+
+    public static void println(Object ... on) {
+        print(on);
+        System.out.println();
+    }
+
     public static void print(Object o) {
         System.out.print(o);
+    }
+
+    public static void print(Object ... on) {
+        for(var o : on) {
+            System.out.print(o);
+            System.out.print('\t');
+        }
     }
 
     public static void pause() {
@@ -171,8 +187,8 @@ public class Fusy {
         };
     }
 
-    public static<T> T min(Iterator<T> it, BiFunction<T, T, Integer> comparator) {
-        var c = new Cascade<T>(it);
+    public static<T> T min(Iterable<T> it, BiFunction<T, T, Integer> comparator) {
+        var c = new Cascade<>(it.iterator());
         if(!c.hasNext()) return null;
         var min = c.next();
         for(var i : c) {

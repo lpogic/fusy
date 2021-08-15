@@ -7,11 +7,12 @@ import static suite.suite.$uite.$;
 public class FusBodyProcessor implements FusProcessor {
 
     public enum State {
-        EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRING_HASH, STRING_HASH_END, CHARACTER, STR_BACKSLASH,
-        SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_NEXT,  BT_TOKEN, BRACKET_INDEX,
-        SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, SCOPE_STAT, SCOPE_EXP_STAT, CASE_SCOPE_STAT, INLINE_STATEMENT, NAKED_EXP,
+        EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRING_HASH, STRING_HASH_END,
+        CHARACTER, STR_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_NEXT, AFTER_BT, BT_HASH, ARRAY_INDEX,
+        SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, SCOPE_STAT, SCOPE_EXP_STAT, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT,
+        INLINE_STATEMENT, NAKED_EXP,
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
-        AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, FUSY_FUN, FUSY_TYPE, FUSY_FUN_PARAMS
+        AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, FUSY_FUN, FUSY_TYPE, FUSY_FUN_BEGIN, HASH, HASH_STRING
     }
 
     enum Result {
@@ -64,7 +65,7 @@ public class FusBodyProcessor implements FusProcessor {
                         $state.aimedAdd($state.raw(), State.STATEMENT);
                         $state.aimedAdd($state.raw(), State.FUSY_FUN);
                     } else if (i == '#') {
-                        result.append("var ");
+                        $state.aimedAdd($state.raw(), State.HASH);
                     } else if (i == '\\') {
                         $state.aimedAdd($state.raw(), State.BACKSLASH);
                     } else {
@@ -81,14 +82,13 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     } else if (i == '@') {
                         $state.aimedAdd($state.raw(), State.AT);
+                    } else if (i == '#') {
+                        $state.aimedAdd($state.raw(), State.HASH);
                     } else if (i == '\n') {
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.EMPTY_STATEMENT);
@@ -162,6 +162,22 @@ public class FusBodyProcessor implements FusProcessor {
                         token.appendCodePoint(i);
                     }
                 }
+                case HASH -> {
+                    if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    } else if(i == '[') {
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    } else if(Character.isJavaIdentifierStart(i)) {
+                        result.append("var ");
+                        $state.unset($state.raw());
+                        advance(i);
+                    } else if(!Character.isWhitespace(i)) {
+                        $state.unset($state.raw());
+                        advance(i);
+                    }
+                }
                 case LAMBDA -> {
                     if (i == '\\') {
                         $state.aimedAdd($state.raw(), State.BACKSLASH);
@@ -186,9 +202,6 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
@@ -209,7 +222,7 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
+                        advance(i);
                     } else {
                         result.appendCodePoint(i);
                     }
@@ -221,9 +234,6 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
@@ -233,7 +243,7 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '@') {
                         $state.aimedAdd($state.raw(), State.AT);
                     } else if (i == '#') {
-                        result.append("var ");
+                        $state.aimedAdd($state.raw(), State.HASH);
                     } else if (i == '\\') {
                         $state.aimedAdd($state.raw(), State.BACKSLASH);
                     } else if (i == '<') {
@@ -245,7 +255,7 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
+                        advance(i);
                     } else {
                         result.appendCodePoint(i);
                     }
@@ -257,16 +267,13 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     } else if (i == ')') {
                         $state.unset($state.raw());
                     } else if (i == '#') {
-                        result.append("var ");
+                        $state.aimedAdd($state.raw(), State.HASH);
                     } else if (i == '@') {
                         $state.aimedAdd($state.raw(), State.AT);
                     } else if (i == '\\') {
@@ -280,7 +287,7 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
+                        advance(i);
                     } else {
                         result.appendCodePoint(i);
                     }
@@ -292,9 +299,6 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
@@ -302,7 +306,7 @@ public class FusBodyProcessor implements FusProcessor {
                         $state.unset($state.raw());
                         advance(i);
                     } else if (i == '#') {
-                        result.append("var ");
+                        $state.aimedAdd($state.raw(), State.HASH);
                     } else if (i == '@') {
                         $state.aimedAdd($state.raw(), State.AT);
                     } else if (i == '\\') {
@@ -316,7 +320,7 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
+                        advance(i);
                     } else {
                         result.appendCodePoint(i);
                     }
@@ -326,7 +330,8 @@ public class FusBodyProcessor implements FusProcessor {
                         token.appendCodePoint(i);
 
                     } else {
-                        switch (token.toString()) {
+                        var str = token.toString();
+                        switch (str) {
                             case "return" -> {
                                 $state.unset($state.raw());
                                 $state.unset($state.raw());
@@ -402,22 +407,16 @@ public class FusBodyProcessor implements FusProcessor {
                 case AFTER_ID -> {
                     if (i == '\\') {
                         $state.aimedAdd($state.raw(), State.BACKSLASH);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BRACKET_INDEX);
-                        result.appendCodePoint(i);
-                    } else if (i == '.') {
-                        $state.unset($state.raw());
-                        $state.aimedAdd($state.raw(), State.ID);
-                        token = new StringBuilder();
-                        token.appendCodePoint(i);
+                    } else if (i == '{') {
+                        $state.aimedAdd($state.raw(), State.ARRAY_INDEX);
+                        result.append("[");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     } else if (i == '@') {
                         result.append(".class");
-                    } else if(i == '{') {
-                        $state.aimedAdd($state.raw(), State.FUSY_FUN_PARAMS);
-                        result.append(".apply(");
+                    } else if(i == '!') {
+                        $state.aimedAdd($state.raw(), State.FUSY_FUN_BEGIN);
                     } else if (Character.isWhitespace(i) && i != '\n') {
                         result.appendCodePoint(i);
                     } else {
@@ -531,79 +530,42 @@ public class FusBodyProcessor implements FusProcessor {
                     }
                 }
                 case BT -> {
-                    if (i == '(') {
-                        $state.in($state.raw()).reset(State.BT_NEXT);
-                        $state.aimedAdd($state.raw(), State.EXPRESSION);
-                        result.appendCodePoint(i);
+                    if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
                     } else if (i == '[') {
-                        $state.in($state.raw()).reset(State.BT_NEXT);
+                        $state.in($state.raw()).reset(State.AFTER_BT);
                         $state.aimedAdd($state.raw(), State.BT);
                         result.append("$uite.$(");
-                    } else if (i == ']') {
-                        $state.unset($state.raw());
-                        result.append(")");
-                    } else if (Character.isWhitespace(i)) {
-                        result.appendCodePoint(i);
-                    } else {
+                    } else if(!Character.isWhitespace(i)) {
                         $state.in($state.raw()).reset(State.BT_NEXT);
-                        $state.aimedAdd($state.raw(), State.BT_TOKEN);
-                        result.append("\"");
-                        token = new StringBuilder();
                         advance(i);
                     }
                 }
                 case BT_NEXT -> {
-                    if (i == '(') {
-                        $state.aimedAdd($state.raw(), State.EXPRESSION);
-                        result.append(",").appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append(",$uite.$(");
-                    } else if (i == ']') {
-                        $state.unset($state.raw());
-                        result.append(")");
-                    } else if (Character.isWhitespace(i)) {
-                        result.appendCodePoint(i);
-                    } else {
-                        $state.aimedAdd($state.raw(), State.BT_TOKEN);
-                        result.append(",\"");
-                        token = new StringBuilder();
-                        advance(i);
-                    }
-                }
-                case BT_TOKEN -> {
-                    if (i == '[' || i == ']') {
-                        $state.unset($state.raw());
-                        result.append(token.toString().trim()).append("\"");
-                        advance(i);
-                    } else if (i == '"') {
-                        token.append("\\\"");
-                    } else if(i == '\n') {
-                        token.append("\\n");
-                    } else if(i == '\\') {
-                        token.append("\\\\");
-                    } else {
-                        token.appendCodePoint(i);
-                    }
-                }
-                case BRACKET_INDEX -> {
-                    if (i == '\\') {
-                        $state.aimedAdd($state.raw(), State.BACKSLASH);
-                    }if (i == '"') {
+                    if (i == '"') {
                         $state.aimedAdd($state.raw(), State.STRING);
                         result.appendCodePoint(i);
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     } else if (i == ']') {
                         $state.unset($state.raw());
-                        result.appendCodePoint(i);
+                        result.append(")");
+                    } else if (i == '[') {
+                        $state.in($state.raw()).reset(State.AFTER_BT);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append(",$uite.$(");
+                    } else if (i == '@') {
+                        $state.aimedAdd($state.raw(), State.AT);
+                    } else if (i == '#') {
+                        $state.aimedAdd($state.raw(), State.BT_HASH);
+                    } else if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    } else if (i == '<') {
+                        $state.aimedAdd($state.raw(), State.BEAK);
                     } else if(i == '{') {
                         subProcessor = new FusyFunProcessor(this);
                         subProcessor.getReady();
@@ -611,12 +573,47 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
-                    } else {
+                        advance(i);
+                    } else if(!Character.isWhitespace(i)) {
                         result.appendCodePoint(i);
                     }
                 }
-                case FUSY_FUN_PARAMS -> {
+                case AFTER_BT -> {
+                    if (i == ']' || i == '[') {
+                        $state.in($state.raw()).reset(State.BT_NEXT);
+                        advance(i);
+                    } else if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    } else if(!Character.isWhitespace(i)) {
+                        result.append(",");
+                        $state.in($state.raw()).reset(State.BT_NEXT);
+                        advance(i);
+                    }
+                }
+                case BT_HASH -> {
+                    if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    } else if(i == '[') {
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    } else if(!Character.isWhitespace(i)) {
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.HASH_STRING);
+                        token = new StringBuilder();
+                        advance(i);
+                    }
+                }
+                case HASH_STRING -> {
+                    if(i == '[' || i == ']') {
+                        result.append('"').append(token.toString().trim()).append('"');
+                        $state.unset($state.raw());
+                        advance(i);
+                    } else {
+                        token.appendCodePoint(i);
+                    }
+                }
+                case ARRAY_INDEX -> {
                     if (i == '\\') {
                         $state.aimedAdd($state.raw(), State.BACKSLASH);
                     }if (i == '"') {
@@ -625,15 +622,12 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (i == '\'') {
                         $state.aimedAdd($state.raw(), State.CHARACTER);
                         result.appendCodePoint(i);
-                    } else if (i == '[') {
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     } else if (i == '(') {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     } else if (i == '}') {
                         $state.unset($state.raw());
-                        result.append(")");
+                        result.append("]");
                     } else if(i == '{') {
                         subProcessor = new FusyFunProcessor(this);
                         subProcessor.getReady();
@@ -641,9 +635,23 @@ public class FusBodyProcessor implements FusProcessor {
                     } else if (Character.isJavaIdentifierPart(i)) {
                         $state.aimedAdd($state.raw(), State.ID);
                         token = new StringBuilder();
-                        token.appendCodePoint(i);
+                        advance(i);
                     } else {
                         result.appendCodePoint(i);
+                    }
+                }
+                case FUSY_FUN_BEGIN -> {
+                    if (i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    } else if (i == '(') {
+                        result.append(".apply(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
+                    } else if (!Character.isWhitespace(i) || i == '\n') {
+                        $state.unset($state.raw());
+                        $state.unset($state.raw());
+                        advance('!');
+                        advance(i);
                     }
                 }
                 case SCOPE_EXP -> {
@@ -654,8 +662,12 @@ public class FusBodyProcessor implements FusProcessor {
                         $state.aimedAdd($state.raw(), State.SCOPE_EXP_STAT);
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.append("(");
-                    } else {
-                        result.appendCodePoint(i);
+                    } else if(!Character.isWhitespace(i)) {
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.NAKED_SCOPE_EXP_STAT);
+                        $state.aimedAdd($state.raw(), State.LAMBDA_EXP);
+                        result.append("(");
+                        advance(i);
                     }
                 }
                 case SCOPE_EXP_STAT -> {
@@ -664,6 +676,12 @@ public class FusBodyProcessor implements FusProcessor {
                     $state.aimedAdd($state.raw(), State.EMPTY_STATEMENT);
                     result.append("{");
                     advance(i);
+                }
+                case NAKED_SCOPE_EXP_STAT -> {
+                    $state.unset($state.raw());
+                    $state.aimedAdd($state.raw(), State.SCOPE_END);
+                    $state.aimedAdd($state.raw(), State.EMPTY_STATEMENT);
+                    result.append("){");
                 }
                 case SCOPE_END -> {
                     $state.unset($state.raw());
