@@ -4,31 +4,30 @@ import suite.suite.Subject;
 
 import static suite.suite.$uite.$;
 
-public class FusBodyProcessor implements FusProcessor {
+public class FusBodyProcessor extends FusProcessor {
 
     public enum State {
         EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRING_HASH, STRING_HASH_END,
         CHARACTER, STR_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_NEXT, AFTER_BT, BT_HASH, ARRAY_INDEX,
-        SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, SCOPE_STAT, SCOPE_EXP_STAT, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT,
+        SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, SCOPE_EXP_STAT, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT,
         INLINE_STATEMENT, NAKED_EXP,
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
-        AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, FUSY_FUN, FUSY_TYPE, FUSY_FUN_BEGIN, HASH, HASH_STRING
+        AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, FUSY_FUN, FUSY_TYPE, FUSY_FUN_BEGIN, HASH, BT_HASH_STRING, BTHS_BACKSLASH
     }
 
     enum Result {
         STATEMENTS, DEFINITIONS
     }
 
-    Subject $state;
     StringBuilder result;
     StringBuilder token;
-    FusProcessor parentProcess;
+    FusProcessor parentProcessor;
     FusProcessor subProcessor;
     FusDebugger debugger;
     Subject definitions;
 
-    public FusBodyProcessor(FusProcessor parentProcess) {
-        this.parentProcess = parentProcess;
+    public FusBodyProcessor(FusProcessor parentProcessor) {
+        this.parentProcessor = parentProcessor;
     }
 
     @Override
@@ -36,7 +35,7 @@ public class FusBodyProcessor implements FusProcessor {
         getReady(State.EMPTY_STATEMENT);
     }
 
-    public void getReady(State initialState) {
+    public void getReady(Object initialState) {
         result = new StringBuilder();
         definitions = $();
         debugger = new FusDebugger();
@@ -169,6 +168,12 @@ public class FusBodyProcessor implements FusProcessor {
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.BT);
                         result.append("$uite.$(");
+                    } else if(i == '(') {
+                        result.append("$uite.$(");
+                        $state.unset($state.raw());
+                    } else if(i == '.') {
+                        result.append("Suite.");
+                        $state.unset($state.raw());
                     } else if(Character.isJavaIdentifierStart(i)) {
                         result.append("var ");
                         $state.unset($state.raw());
@@ -387,14 +392,6 @@ public class FusBodyProcessor implements FusProcessor {
                                 result.append("else if");
                                 advance(i);
                             }
-                            case "enum", "interface", "class", "record" -> {
-                                $state.unset($state.raw());
-                                $state.unset($state.raw());
-                                $state.aimedAdd($state.raw(), State.EMPTY_STATEMENT);
-                                $state.aimedAdd($state.raw(), State.SCOPE_STAT);
-                                result.append(token);
-                                advance(i);
-                            }
                             default -> {
                                 $state.unset($state.raw());
                                 $state.aimedAdd($state.raw(), State.AFTER_ID);
@@ -597,20 +594,35 @@ public class FusBodyProcessor implements FusProcessor {
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.BT);
                         result.append("$uite.$(");
-                    } else if(!Character.isWhitespace(i)) {
+                    } else {
                         $state.unset($state.raw());
-                        $state.aimedAdd($state.raw(), State.HASH_STRING);
+                        $state.aimedAdd($state.raw(), State.BT_HASH_STRING);
                         token = new StringBuilder();
                         advance(i);
                     }
                 }
-                case HASH_STRING -> {
+                case BT_HASH_STRING -> {
                     if(i == '[' || i == ']') {
-                        result.append('"').append(token.toString().trim()).append('"');
+                        var str = token.toString().replaceFirst("$\s+\n", "").stripTrailing();
+                        result.append("\"\"\"\n").append(str).append("\"\"\"");
                         $state.unset($state.raw());
                         advance(i);
+                    } else if(i == '\\') {
+                        $state.aimedAdd($state.raw(), State.BTHS_BACKSLASH);
                     } else {
                         token.appendCodePoint(i);
+                    }
+                }
+                case BTHS_BACKSLASH -> {
+                    if(i == '[' || i == ']') {
+                        token.appendCodePoint(i);
+                        $state.unset($state.raw());
+                    } else if(i == '\\') {
+                        token.append("\\\\\\\\");
+                        $state.unset($state.raw());
+                    } else {
+                        token.append("\\\\").appendCodePoint(i);
+                        $state.unset($state.raw());
                     }
                 }
                 case ARRAY_INDEX -> {
@@ -735,21 +747,9 @@ public class FusBodyProcessor implements FusProcessor {
                         advance(i);
                     }
                 }
-                case SCOPE_STAT -> {
-                    if (i == '\\') {
-                        $state.aimedAdd($state.raw(), State.BACKSLASH);
-                    }if (i == '\n') {
-                        $state.unset($state.raw());
-                        $state.aimedAdd($state.raw(), State.SCOPE_END);
-                        $state.aimedAdd($state.raw(), State.EMPTY_STATEMENT);
-                        result.append("{\n");
-                    } else if (Character.isWhitespace(i)) {
-                        result.appendCodePoint(i);
-                    }
-                }
             }
-            if ($state.absent() && parentProcess != null) {
-                parentProcess.terminateSubProcess();
+            if ($state.absent() && parentProcessor != null) {
+                parentProcessor.terminateSubProcess();
             }
         } catch (Exception e) {
             throw new RuntimeException(debugger.finish().in(FusDebugger.Result.COMPLETE).asString(), e);

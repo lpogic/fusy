@@ -4,7 +4,7 @@ import suite.suite.Subject;
 
 import static suite.suite.$uite.$;
 
-public class FusyFunProcessor implements FusProcessor {
+public class FusyFunProcessor extends FusProcessor {
 
     enum State {
         ARGUMENTS_TYPE, RETURN_TYPE, TYPE, TERMINATED
@@ -14,7 +14,6 @@ public class FusyFunProcessor implements FusProcessor {
         COMPLETE
     }
 
-    Subject $state;
     Subject $argumentTypes;
     String returnType;
     StringBuilder result;

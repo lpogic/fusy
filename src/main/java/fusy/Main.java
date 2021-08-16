@@ -64,9 +64,11 @@ public class Main {
                 import static fusy.FusyFun.*;
                 import static java.lang.Thread.*;
                 import suite.suite.$uite;
+                import suite.suite.Suite;
                 import suite.suite.action.*;
                 import suite.suite.Subject;
                 import suite.suite.util.Series;
+                import suite.suite.util.Sequence;
                 import java.util.Objects;
                 
                 class fusy {

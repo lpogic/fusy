@@ -4,7 +4,7 @@ import suite.suite.Subject;
 
 import static suite.suite.$uite.$;
 
-public class FusyTypeProcessor implements FusProcessor {
+public class FusyTypeProcessor extends FusProcessor {
 
     enum State {
         BEFORE, ID, BEFORE_GENERIC, BEFORE_NEXT_GENERIC, GENERIC, AFTER_GENERIC, FUSY_FUN, BEAK,
@@ -16,7 +16,6 @@ public class FusyTypeProcessor implements FusProcessor {
         COMPLETE
     }
 
-    Subject $state;
     Subject $types;
     StringBuilder result;
     FusProcessor parentProcessor;

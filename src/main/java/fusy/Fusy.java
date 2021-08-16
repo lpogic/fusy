@@ -118,14 +118,6 @@ public class Fusy {
         readln("Kliknij ENTER aby kontynuowac");
     }
 
-    public static Subject set(Object ... o) {
-        return Suite.set(o);
-    }
-
-    public static Subject list(Object ... o) {
-        return Suite.add(o);
-    }
-
     public static Subject mix(Series s) {
         var list = Sequence.ofEntire(s).toList();
         Collections.shuffle(list);

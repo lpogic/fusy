@@ -1,10 +1,13 @@
 package fusy;
 
 import suite.processor.IntProcessor;
+import suite.suite.Subject;
 
-public interface FusProcessor extends IntProcessor {
-    void terminateSubProcess();
-    default void getReady(Object initState){
+public abstract class FusProcessor implements IntProcessor {
+    Subject $state;
+
+    public abstract void terminateSubProcess();
+    public void getReady(Object initState){
         getReady();
     }
 }

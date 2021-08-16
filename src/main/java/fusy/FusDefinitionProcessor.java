@@ -4,7 +4,7 @@ import suite.suite.Subject;
 
 import static suite.suite.$uite.$;
 
-public class FusDefinitionProcessor implements FusProcessor {
+public class FusDefinitionProcessor extends FusProcessor {
 
     enum State {
         BEFORE_TYPE, TYPE, HEADER, BODY, AT, ENUM_HEADER, ENUM_PENDING, ENUM_OPTION,
@@ -16,7 +16,6 @@ public class FusDefinitionProcessor implements FusProcessor {
         COMPLETE
     }
 
-    Subject $state;
     StringBuilder result;
     FusBodyProcessor parentProcessor;
     FusProcessor subProcessor;
@@ -163,6 +162,7 @@ public class FusDefinitionProcessor implements FusProcessor {
                 if(i == '\\') {
                     $state.aimedAdd($state.raw(), State.BACKSLASH);
                 } else if(i == '>') {
+                    $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.ENUM_BODY);
                     result.append(";\n");
                     subProcessor = new FusBodyProcessor(this);
@@ -237,7 +237,13 @@ public class FusDefinitionProcessor implements FusProcessor {
                     $state.aimedAdd($state.raw(), State.ENUM_HEADER);
                 }
                 default -> {
-                    result.append("public ").append(str);
+                    if(parentProcessor == null ||
+                            parentProcessor.parentProcessor == null ||
+                            parentProcessor.parentProcessor.$state.in().raw() != State.ENUM_BODY) {
+                        result.append("public ").append(str);
+                    } else {
+                        result.append(str);
+                    }
                     $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.HEADER);
                 }
