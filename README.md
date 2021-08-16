@@ -81,3 +81,18 @@ printPath(shortestPath(output, "a", "e"))
 println("\nShortest path from 'a' to 'f':")
 printPath(shortestPath(output, "a", "f"))
 ```
+wyjście:
+```
+Output:
+[ d-->e
+  c-->d
+  c-->f
+  a-->c
+  a-->b ]
+
+Shortest path from 'a' to 'e':
+[ a-->c-->d-->e ]
+
+Shortest path from 'a' to 'f':
+[ a-->c-->f ]
+```
