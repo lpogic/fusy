@@ -1,5 +1,5 @@
 # Fusy
-Język programowania Fusy. Eksperymentalny dialekt Javy. Aktualnie tłumaczony na kod Java, a następnie uruchamiany w środowisku JShell.
+Język programowania Fusy. Eksperymentalny dialekt Javy.
 # Przykład
 (rozwiązanie zadania <a href="http://rosettacode.org/wiki/Dijkstra%27s_algorithm">http://rosettacode.org/wiki/Dijkstra%27s_algorithm</a>)
 ```
