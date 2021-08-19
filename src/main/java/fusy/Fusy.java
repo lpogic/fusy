@@ -190,4 +190,12 @@ public class Fusy {
         }
         return min;
     }
+
+    public static boolean random(double chance) {
+        return Math.random() < chance;
+    }
+
+    public static Subject random(Subject s) {
+        return s.select((int)Math.floor(Math.random() * s.size()));
+    }
 }
