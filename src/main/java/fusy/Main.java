@@ -25,11 +25,19 @@ public class Main {
                         System.out.println("""
                                 help - dostepne opcje
                                 exit - wyjscie
+                                last - wyświetla ostatni skompilowany program w trybie edycji
                                 Inne napisy interpretowane sa jako sciezka do pliku ze skryptem i uruchamiane
                                 """);
                     }
                     case "exit" -> {
                         return;
+                    }
+                    case "last" -> {
+                        try {
+                            last();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                     }
                     default -> {
                         try {
@@ -91,6 +99,16 @@ public class Main {
         var pb = new ProcessBuilder();
         Process process = pb.
                 command("cmd",  "/c", "jre\\bin\\java.exe", "fusy.java").
+                directory(new File(".")).
+                inheritIO().
+                start();
+        process.waitFor();
+    }
+
+    static void last() throws IOException, InterruptedException {
+        var pb = new ProcessBuilder();
+        Process process = pb.
+                command("cmd",  "/c", "powershell", "-command", "\"start -verb edit 'fusy.java'\"").
                 directory(new File(".")).
                 inheritIO().
                 start();
