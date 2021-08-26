@@ -16,9 +16,7 @@ public class Fusy {
     static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
-        for(var s : variations(Suite.set('a','b','c','d','e'), 3, true)) {
-            s.print();
-        }
+        System.out.println(Sequence.of(1,2,3).toString(",","and"));
     }
 
     public static String readln() {
@@ -128,14 +126,14 @@ public class Fusy {
         return Suite.alter(list);
     }
 
-    public static Series variations(Subject sub) {
-        return variations(sub, sub.size());
+    public static Sequence<Series> words(Subject sub) {
+        return words(sub, sub.size());
     }
 
-    public static Series variations(Subject sub, int setSize) {
-        if(setSize < 1) return Series.of(Suite.set());
-        if(setSize > sub.size()) throw new IndexOutOfBoundsException();
-        return () -> new Browser(){
+    public static Sequence<Series> words(Subject sub, int size) {
+        if(size < 1) return Sequence.of(Suite.set());
+        if(size > sub.size()) throw new IndexOutOfBoundsException();
+        return () -> new Iterator<>(){
             int i = 0;
             final Subject indexed = sub.index(range(0, sub.size() - 1)).set();
 
@@ -147,15 +145,15 @@ public class Fusy {
                 var subSize = sub.size();
                 var ix = new int[subSize];
                 for(int x = 0; x < ix.length; ++x) ix[x] = x;
-                for(int d = 0; d < setSize; ++d) {
+                for(int d = 0; d < size; ++d) {
                     int sd = d + i / factorial(subSize - 1 - d) % (subSize - d);
                     if(sd > d) {
                         int t = ix[d]; ix[d] = ix[sd]; ix[sd] = t;
                     }
                 }
-                i += factorial(subSize - setSize);
+                i += factorial(subSize - size);
                 var result = Suite.set();
-                for(int in = 0; in < setSize; ++in) {
+                for(int in = 0; in < size; ++in) {
                     result.alter(indexed.in(ix[in]));
                 }
                 return result;
@@ -163,13 +161,13 @@ public class Fusy {
         };
     }
 
-    public static Series variations(Subject sub, int setSize, boolean repetition) {
-        if(!repetition) return variations(sub, setSize);
-        return () -> new Browser(){
+    public static Sequence<Series> words(Subject sub, int size, boolean repetition) {
+        if(!repetition) return words(sub, size);
+        return () -> new Iterator<>(){
             final Subject export = Suite.set();
             final Subject sc = Suite.set();
             {
-                for(int i = 0 ;i < setSize; ++i) {
+                for(int i = 0 ;i < size; ++i) {
                     var auto = new Suite.Auto();
                     var c = sub.cascade();
                     sc.put(c, auto);
@@ -185,13 +183,13 @@ public class Fusy {
                 return false;
             }
 
-            public Subject next() {
+            public Series next() {
                 var scc = sc.cascade();
                 for (var $c : scc) {
                     Cascade<Subject> c = $c.asExpected();
                     if (c.hasNext()) {
                         export.inset($c.in().raw(), c.next());
-                        return export;
+                        return export.eachIn();
                     } else {
                         var c1 = sub.cascade();
                         sc.swap(c, c1);
