@@ -80,6 +80,7 @@ public class Main {
                 import java.util.Objects;
                 import java.util.Arrays;
                 
+                @SuppressWarnings("unchecked")
                 class fusy {
                     public static void main(String[] args) throws Exception {
                         new fusy();

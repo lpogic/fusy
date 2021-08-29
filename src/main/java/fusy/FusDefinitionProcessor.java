@@ -30,6 +30,12 @@ public class FusDefinitionProcessor extends FusProcessor {
         $state = $($(State.BEFORE_TYPE));
     }
 
+    public void getReady(String type) {
+        result = new StringBuilder();
+        $state = $($(State.TYPE));
+        typeComplete(type);
+    }
+
     @Override
     public void advance(int i) {
         switch ($state.in().as(State.class)) {
@@ -132,8 +138,9 @@ public class FusDefinitionProcessor extends FusProcessor {
                     result.append("(");
                     $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.ENUM_OPTION_CSTR);
-                    subProcessor = new FusBodyProcessor(this);
-                    subProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                    var fusBodyProcessor = new FusBodyProcessor(this);
+                    fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                    subProcessor = fusBodyProcessor;
                 } else if(i == '>') {
                     $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.BACKBEAK);
@@ -236,18 +243,7 @@ public class FusDefinitionProcessor extends FusProcessor {
     public void terminateSubProcess() {
         if($state.in().raw() == State.TYPE) {
             var str = subProcessor.finish().in(FusyTypeProcessor.Result.COMPLETE).asString();
-            switch (str) {
-                case "enum" -> {
-                    result.append(str);
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.ENUM_HEADER);
-                }
-                default -> {
-                    result.append(str);
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.HEADER);
-                }
-            }
+            typeComplete(str);
         } else if($state.in().raw() == State.BODY) {
             var $ = subProcessor.finish();
             String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
@@ -271,6 +267,25 @@ public class FusDefinitionProcessor extends FusProcessor {
             String fun = $.in(FusyFunProcessor.Result.COMPLETE).asString();
             result.append(fun);
             $state.unset($state.raw());
+        }
+    }
+
+    private void typeComplete(String complete) {
+        switch (complete) {
+            case "enum" -> {
+                result.append(complete).append(" ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.ENUM_HEADER);
+            }
+            case "new" -> {
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.HEADER);
+            }
+            default -> {
+                result.append(complete).append(" ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.HEADER);
+            }
         }
     }
 

@@ -7,6 +7,11 @@ import java.util.function.Supplier;
 public class FusyFun {
     public interface FusyFun0<R> extends Supplier<R> {
         R apply();
+
+        @Override
+        default R get() {
+            return apply();
+        }
     }
     public interface FusyFun1<A1, R> extends Function<A1, R> {
         R apply(A1 a1);
