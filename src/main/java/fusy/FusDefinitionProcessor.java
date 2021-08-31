@@ -51,8 +51,12 @@ public class FusDefinitionProcessor extends FusProcessor {
                     subProcessor.getReady();
                 } else if(i == '.') {
                     result.append("private ");
+                } else if(i == ':') {
+                    result.append("protected ");
                 } else if(i == '!') {
                     result.append("public ");
+                } else if(i == '^') {
+                    result.append("static ");
                 } else {
                     subProcessor = new FusyTypeProcessor(this);
                     subProcessor.getReady();

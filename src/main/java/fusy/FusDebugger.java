@@ -1,11 +1,9 @@
 package fusy;
-
-import suite.processor.IntProcessor;
 import suite.suite.Subject;
 
 import static suite.suite.$uite.$;
 
-public class FusDebugger implements IntProcessor {
+public class FusDebugger extends FusProcessor {
 
     enum State {
     }
@@ -16,9 +14,12 @@ public class FusDebugger implements IntProcessor {
 
     StringBuilder line;
     int lineCounter;
+    FusBodyProcessor processor;
 
     @Override
     public void getReady() {
+        processor = new FusBodyProcessor(this);
+        processor.getReady();
         line = new StringBuilder();
         lineCounter = 1;
     }
@@ -31,11 +32,48 @@ public class FusDebugger implements IntProcessor {
         } else {
             line.appendCodePoint(i);
         }
+        try {
+            processor.advance(i);
+        } catch (Exception e) {
+            String str = "EXCEPTION AT LINE " + lineCounter + ": " + line.toString();
+            throw new RuntimeException(str);
+        }
+    }
+
+    @Override
+    public void terminateSubProcess() {
+
     }
 
     @Override
     public Subject finish() {
-        String str = "AT LINE " + lineCounter + ": " + line.toString();
-        return $(Result.COMPLETE, $(str));
+        var $program = processor.finish();
+        var program = """
+                import java.nio.file.*;
+                import static fusy.Fusy.*;
+                import static fusy.FusyFun.*;
+                import static java.lang.Thread.*;
+                import suite.suite.$uite;
+                import suite.suite.Suite;
+                import suite.suite.action.*;
+                import suite.suite.Subject;
+                import suite.suite.util.Series;
+                import suite.suite.util.Sequence;
+                import java.util.Objects;
+                import java.util.Arrays;
+                
+                @SuppressWarnings("unchecked")
+                class fusy {
+                    public static void main(String[] args) throws Exception {
+                        new fusy();
+                    }
+                    
+                    fusy() { //// STATEMENTS ////
+                    """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
+                + "}\n//// DEFINITIONS ////\n" +
+                $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                }
+                """;
+        return $(Result.COMPLETE, $(program));
     }
 }

@@ -13,7 +13,7 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
-//        args = new String[]{"skrypt.txt"};
+        args = new String[]{"skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {
@@ -21,14 +21,12 @@ public class Main {
                 String str = scanner.nextLine();
                 switch (str.trim()) {
                     case "" -> {}
-                    case "help" -> {
-                        System.out.println("""
-                                help - dostepne opcje
-                                exit - wyjscie
-                                last - wyświetla ostatni skompilowany program w trybie edycji
-                                Inne napisy interpretowane sa jako sciezka do pliku ze skryptem i uruchamiane
-                                """);
-                    }
+                    case "help" -> System.out.println("""
+                            help - dostepne opcje
+                            exit - wyjscie
+                            last - wyświetla ostatni skompilowany program w trybie edycji
+                            Inne napisy interpretowane sa jako sciezka do pliku ze skryptem i uruchamiane
+                            """);
                     case "exit" -> {
                         return;
                     }
@@ -59,39 +57,13 @@ public class Main {
     }
 
     static void run(String fus) throws IOException, InterruptedException {
-        var proc = new FusBodyProcessor(null);
-        proc.getReady();
+        var debugger = new FusDebugger();
+        debugger.getReady();
         Files.readAllLines(Path.of(fus)).forEach(str -> {
-            str.codePoints().forEach(proc::advance);
-            proc.advance('\n');
+            str.codePoints().forEach(debugger::advance);
+            debugger.advance('\n');
         });
-        var $program = proc.finish();
-        var program = """
-                import java.nio.file.*;
-                import static fusy.Fusy.*;
-                import static fusy.FusyFun.*;
-                import static java.lang.Thread.*;
-                import suite.suite.$uite;
-                import suite.suite.Suite;
-                import suite.suite.action.*;
-                import suite.suite.Subject;
-                import suite.suite.util.Series;
-                import suite.suite.util.Sequence;
-                import java.util.Objects;
-                import java.util.Arrays;
-                
-                @SuppressWarnings("unchecked")
-                class fusy {
-                    public static void main(String[] args) throws Exception {
-                        new fusy();
-                    }
-                    
-                    fusy() { //// STATEMENTS ////
-                    """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                + "}\n//// DEFINITIONS ////\n" +
-                $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
-                }
-                """;
+        var program = debugger.finish().in(FusDebugger.Result.COMPLETE).asString();
         var output = new FileOutputStream("fusy.java");
         var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
         writer.write(program);
