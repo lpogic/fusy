@@ -8,17 +8,19 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     enum State {
         BEFORE_TYPE, TYPE, HEADER, BODY, ENUM_HEADER, ENUM_PENDING, ENUM_OPTION,
-        ENUM_OPTION_CSTR, ENUM_AFTER_CSTR, ENUM_BODY, BEAK, BACKBEAK, FUSY_FUN,
-        BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH
+        ENUM_OPTION_CSTR, ENUM_AFTER_CSTR, ENUM_BODY, BEAK, BACKBEAK, FUSY_FUN, INLINE_BODY,
+        BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
+        RESOURCE_HEADER, METHOD_ARGUMENTS
     }
 
     enum Result {
-        COMPLETE
+        COMPLETE, IMPORT
     }
 
     StringBuilder result;
     FusBodyProcessor parentProcessor;
     FusProcessor subProcessor;
+    boolean isImport;
 
     public FusDefinitionProcessor(FusBodyProcessor parentProcessor) {
         this.parentProcessor = parentProcessor;
@@ -26,11 +28,13 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     @Override
     public void getReady() {
+        isImport = false;
         result = new StringBuilder();
         $state = $($(State.BEFORE_TYPE));
     }
 
     public void getReady(String type) {
+        isImport = false;
         result = new StringBuilder();
         $state = $($(State.TYPE));
         typeComplete(type);
@@ -48,11 +52,12 @@ public class FusDefinitionProcessor extends FusProcessor {
                         subProcessor = new FusBodyProcessor(this);
                         subProcessor.getReady();
                     }
-                    case '.' -> result.append("private ");
-                    case ':' -> result.append("protected ");
-                    case '!' -> result.append("public ");
-                    case '/' -> result.append("static ");
+                    case '-' -> result.append("private ");
+                    case '~' -> result.append("protected ");
+                    case '+' -> result.append("public ");
+                    case '!' -> result.append("static ");
                     case '?' -> result.append("abstract ");
+                    case '*' -> result.append("final ");
                     default -> {
                         if(Character.isWhitespace(i)) {
                             result.appendCodePoint(i);
@@ -82,6 +87,38 @@ public class FusDefinitionProcessor extends FusProcessor {
                     $state.aimedAdd($state.raw(), State.FUSY_FUN);
                 } else {
                     result.appendCodePoint(i);
+                }
+            }
+            case RESOURCE_HEADER -> {
+                switch (i) {
+                    case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    case '\n' -> {
+                        result.append(";\n");
+                        parentProcessor.terminateSubProcess();
+                    }
+                    case '(' -> {
+                        result.append("(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.METHOD_ARGUMENTS);
+                        var fusBodyProcessor = new FusBodyProcessor(this);
+                        fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                        subProcessor = fusBodyProcessor;
+                    }
+                    case '=' -> {
+                        result.append("=");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.INLINE_BODY);
+                        var fusBodyProcessor = new FusBodyProcessor(this);
+                        fusBodyProcessor.getReady(FusBodyProcessor.State.STATEMENT);
+                        subProcessor = fusBodyProcessor;
+                    }
+                    case '<' -> $state.aimedAdd($state.raw(), State.BEAK);
+                    case '{' -> {
+                        subProcessor = new FusyFunProcessor(this);
+                        subProcessor.getReady();
+                        $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                    }
+                    default -> result.appendCodePoint(i);
                 }
             }
             case ENUM_HEADER -> {
@@ -193,7 +230,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                     advance(i);
                 }
             }
-            case TYPE, BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN -> subProcessor.advance(i);
+            case TYPE, BODY, INLINE_BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN, METHOD_ARGUMENTS -> subProcessor.advance(i);
             case BACKSLASH -> {
                 if(i == '\\') {
                     $state.unset($state.raw());
@@ -258,6 +295,12 @@ public class FusDefinitionProcessor extends FusProcessor {
                 result.append(stats).append(defs).append("}");
                 parentProcessor.terminateSubProcess();
             }
+            case INLINE_BODY -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                result.append(stats);
+                parentProcessor.terminateSubProcess();
+            }
             case ENUM_OPTION_CSTR -> {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
@@ -270,6 +313,15 @@ public class FusDefinitionProcessor extends FusProcessor {
                 String fun = $.in(FusyFunProcessor.Result.COMPLETE).asString();
                 result.append(fun);
                 $state.unset($state.raw());
+            }
+            case METHOD_ARGUMENTS -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                result.append(stats).append("{\n");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.BODY);
+                subProcessor = new FusBodyProcessor(this);
+                subProcessor.getReady();
             }
         }
     }
@@ -285,16 +337,42 @@ public class FusDefinitionProcessor extends FusProcessor {
                 $state.unset($state.raw());
                 $state.aimedAdd($state.raw(), State.HEADER);
             }
-            default -> {
+            case "import" -> {
+                System.out.println("XD");
+                System.out.println(result.toString());
+                result = new StringBuilder("import ").append(result.toString());
+                isImport =  true;
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.INLINE_BODY);
+                var fusBodyProcessor = new FusBodyProcessor(this);
+                fusBodyProcessor.getReady(FusBodyProcessor.State.STATEMENT);
+                subProcessor = fusBodyProcessor;
+            }
+            case "abstract", "default", "final", "native", "private",
+                    "protected", "public", "static", "strictfp", "transient", "volatile" -> {
+                result.append(complete).append(" ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.BEFORE_TYPE);
+            }
+            case "class", "interface" -> {
                 result.append(complete).append(" ");
                 $state.unset($state.raw());
                 $state.aimedAdd($state.raw(), State.HEADER);
+            }
+            default -> {
+                result.append(complete).append(" ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.RESOURCE_HEADER);
             }
         }
     }
 
     @Override
     public Subject finish() {
-        return $(Result.COMPLETE, $(result.toString()));
+        var r = $(
+                Result.COMPLETE, $(result.toString())
+        );
+        if(isImport) r.set(Result.IMPORT);
+        return r;
     }
 }

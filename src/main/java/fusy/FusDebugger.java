@@ -62,6 +62,7 @@ public class FusDebugger extends FusProcessor {
                 import suite.suite.util.Sequence;
                 import java.util.Objects;
                 import java.util.Arrays;
+                """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                 
                 @SuppressWarnings("unchecked")
                 class fusy {
@@ -69,9 +70,9 @@ public class FusDebugger extends FusProcessor {
                         new fusy();
                     }
                     
-                    fusy() { //// STATEMENTS ////
+                    fusy() {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                + "}\n//// DEFINITIONS ////\n" +
+                + "}\n" +
                 $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
