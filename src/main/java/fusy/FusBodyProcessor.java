@@ -201,6 +201,7 @@ public class FusBodyProcessor extends FusProcessor {
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '[' -> {
                         $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
                         $state.aimedAdd($state.raw(), State.BT);
                         result.append("$uite.$(");
                     }
@@ -999,10 +1000,10 @@ public class FusBodyProcessor extends FusProcessor {
             }
             case FSE_AFTER_ID -> {
                 if (!Character.isWhitespace(i)) {
-                    if (Character.isJavaIdentifierStart(i)) {
-                        result.append(token).append(" : ");
-                    } else {
+                    if (i == '=') {
                         result.append(token);
+                    } else {
+                        result.append(token).append(" : ");
                     }
                     $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.NAKED_SCOPE_EXP_STAT);

@@ -7,6 +7,9 @@ import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 import suite.suite.util.Series;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -254,8 +257,22 @@ public class Fusy {
         return Sequence.ofEntire(() -> str.codePoints().iterator()).series();
     }
 
+    public static Sequence<String> lines(File file) {
+        return Sequence.ofEntire(() -> {
+            try {
+                return Files.lines(file.toPath()).iterator();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public static Sequence<String> split(String splitted, String splitter) {
+        return Sequence.ofEntire(List.of(splitted.split(splitter)));
+    }
+
     public static<T> Sequence<T> until(Supplier<T> sup, T stop) {
-        return () -> new Iterator<T>() {
+        return () -> new Iterator<>() {
             boolean hasNext = false;
             T next;
 

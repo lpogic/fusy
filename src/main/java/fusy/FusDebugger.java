@@ -50,6 +50,7 @@ public class FusDebugger extends FusProcessor {
         var $program = processor.finish();
         var program = """
                 import java.nio.file.*;
+                import java.io.File;
                 import static fusy.Fusy.*;
                 import static fusy.FusyFun.*;
                 import static java.lang.Thread.*;

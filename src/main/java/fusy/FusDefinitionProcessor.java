@@ -40,29 +40,30 @@ public class FusDefinitionProcessor extends FusProcessor {
     public void advance(int i) {
         switch ($state.in().as(State.class)) {
             case BEFORE_TYPE -> {
-                if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
-                } else if(Character.isWhitespace(i)){
-                    result.appendCodePoint(i);
-                } else if(i == '>') {
-                    $state.aimedAdd($state.raw(), State.BODY);
-                    result.append("{");
-                    subProcessor = new FusBodyProcessor(this);
-                    subProcessor.getReady();
-                } else if(i == '.') {
-                    result.append("private ");
-                } else if(i == ':') {
-                    result.append("protected ");
-                } else if(i == '!') {
-                    result.append("public ");
-                } else if(i == '^') {
-                    result.append("static ");
-                } else {
-                    subProcessor = new FusyTypeProcessor(this);
-                    subProcessor.getReady();
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.TYPE);
-                    advance(i);
+                switch (i) {
+                    case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    case '>' -> {
+                        $state.aimedAdd($state.raw(), State.BODY);
+                        result.append("{");
+                        subProcessor = new FusBodyProcessor(this);
+                        subProcessor.getReady();
+                    }
+                    case '.' -> result.append("private ");
+                    case ':' -> result.append("protected ");
+                    case '!' -> result.append("public ");
+                    case '/' -> result.append("static ");
+                    case '?' -> result.append("abstract ");
+                    default -> {
+                        if(Character.isWhitespace(i)) {
+                            result.appendCodePoint(i);
+                        } else {
+                            subProcessor = new FusyTypeProcessor(this);
+                            subProcessor.getReady();
+                            $state.unset($state.raw());
+                            $state.aimedAdd($state.raw(), State.TYPE);
+                            advance(i);
+                        }
+                    }
                 }
             }
             case HEADER -> {
@@ -245,32 +246,31 @@ public class FusDefinitionProcessor extends FusProcessor {
     }
 
     public void terminateSubProcess() {
-        if($state.in().raw() == State.TYPE) {
-            var str = subProcessor.finish().in(FusyTypeProcessor.Result.COMPLETE).asString();
-            typeComplete(str);
-        } else if($state.in().raw() == State.BODY) {
-            var $ = subProcessor.finish();
-            String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
-            String defs = $.in(FusBodyProcessor.Result.DEFINITIONS).asString();
-            result.append(stats).append(defs).append("}");
-            parentProcessor.terminateSubProcess();
-        } else if($state.in().raw() == State.ENUM_OPTION_CSTR) {
-            var $ = subProcessor.finish();
-            String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
-            result.append(stats);
-            $state.unset($state.raw());
-            $state.aimedAdd($state.raw(), State.ENUM_AFTER_CSTR);
-        } else if($state.in().raw() == State.ENUM_BODY) {
-            var $ = subProcessor.finish();
-            String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
-            String defs = $.in(FusBodyProcessor.Result.DEFINITIONS).asString();
-            result.append(stats).append(defs).append("}");
-            parentProcessor.terminateSubProcess();
-        } else if($state.in().raw() == State.FUSY_FUN) {
-            var $ = subProcessor.finish();
-            String fun = $.in(FusyFunProcessor.Result.COMPLETE).asString();
-            result.append(fun);
-            $state.unset($state.raw());
+        switch ($state.in().as(State.class)) {
+            case TYPE -> {
+                var str = subProcessor.finish().in(FusyTypeProcessor.Result.COMPLETE).asString();
+                typeComplete(str);
+            }
+            case BODY, ENUM_BODY -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                String defs = $.in(FusBodyProcessor.Result.DEFINITIONS).asString();
+                result.append(stats).append(defs).append("}");
+                parentProcessor.terminateSubProcess();
+            }
+            case ENUM_OPTION_CSTR -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                result.append(stats);
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.ENUM_AFTER_CSTR);
+            }
+            case FUSY_FUN -> {
+                var $ = subProcessor.finish();
+                String fun = $.in(FusyFunProcessor.Result.COMPLETE).asString();
+                result.append(fun);
+                $state.unset($state.raw());
+            }
         }
     }
 
