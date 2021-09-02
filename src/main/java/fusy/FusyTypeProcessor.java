@@ -9,7 +9,7 @@ public class FusyTypeProcessor extends FusProcessor {
     enum State {
         BEFORE, ID, BEFORE_GENERIC, BEFORE_NEXT_GENERIC, GENERIC, AFTER_GENERIC, FUSY_FUN, BEAK,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
-        TERMINATED
+        TERMINATED, ARRAY
     }
 
     enum Result {
@@ -55,10 +55,19 @@ public class FusyTypeProcessor extends FusProcessor {
                     $state.aimedAdd($state.raw(), State.BEAK);
                 } else if(Character.isJavaIdentifierPart(i) || i == '.') {
                     result.appendCodePoint(i);
+                } else if(i == '{') {
+                    result.append("[");
+                    $state.aimedAdd($state.raw(), State.ARRAY);
                 } else {
                     parentProcessor.terminateSubProcess();
                     parentProcessor.advance(i);
                 }
+            }
+            case ARRAY -> {
+                if(i == '}') {
+                    result.append("]");
+                }
+                $state.unset($state.raw());
             }
             case BEFORE_GENERIC -> {
                 if(i == '\\') {
