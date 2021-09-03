@@ -13,7 +13,8 @@ public class FusBodyProcessor extends FusProcessor {
         SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, SCOPE_EXP_STAT, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT, ELF_SCOPE, INLINE_STATEMENT,
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, BACKBEAK, FUSY_FUN, FUSY_TYPE, HASH, BT_HASH_STRING, BTHS_BACKSLASH,
-        ES_PLUS, ES_MINUS, AFID_EXCLAMATION, EXCLAMATION
+        ES_PLUS, ES_MINUS, AFID_EXCLAMATION, EXCLAMATION, AMPERSAND, AMP_BT, AMP_BT_NEXT, BT_AMPERSAND, BT_NEXT_AMPERSAND,
+        BTHS_END, AMP_BT_NEXT_COMMA, AMP_BT_AFTER, AMP_BT_HASH
     }
 
     enum Result {
@@ -116,6 +117,12 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\n' -> {
                         result.append(";\n");
@@ -159,6 +166,12 @@ public class FusBodyProcessor extends FusProcessor {
                         $state.unset($state.raw());
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
@@ -291,12 +304,18 @@ public class FusBodyProcessor extends FusProcessor {
                 switch (i) {
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '[' -> {
+                        result.append("$uite.$(");
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.AFTER_ID);
                         $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
                     }
-                    case '.' -> {
+                    case '(' -> {
+                        result.append("new Suite.Mask(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
+                    }
+                    case '.', ':' -> {
                         result.append("Suite.");
                         $state.unset($state.raw());
                     }
@@ -307,9 +326,24 @@ public class FusBodyProcessor extends FusProcessor {
                             advance(i); return;
                         } else if (!Character.isWhitespace(i)) {
                             $state.unset($state.raw());
-                            advance(i); return;
+                            advance(i);
+                            return;
                         }
                     }
+                }
+            }
+            case AMPERSAND -> {
+                if(i == '[') {
+                    result.append("$uite.$(");
+                    $state.unset($state.raw());
+                    $state.aimedAdd($state.raw(), State.AFTER_ID);
+                    $state.aimedAdd($state.raw(), State.EXP_END);
+                    $state.aimedAdd($state.raw(), State.AMP_BT);
+                } else {
+                    result.append("&");
+                    $state.unset($state.raw());
+                    advance(i);
+                    return;
                 }
             }
             case LAMBDA -> {
@@ -353,6 +387,12 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '<' -> $state.aimedAdd($state.raw(), State.BEAK);
@@ -387,11 +427,17 @@ public class FusBodyProcessor extends FusProcessor {
                         $state.aimedAdd($state.raw(), State.EXPRESSION);
                         result.appendCodePoint(i);
                     }
-                    case ')', ',', '\n', '[', ']' -> {
+                    case ')', ',', '\n', ']' -> {
                         $state.unset($state.raw());
                         advance(i); return;
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
@@ -432,6 +478,12 @@ public class FusBodyProcessor extends FusProcessor {
                         advance(i); return;
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
@@ -697,20 +749,54 @@ public class FusBodyProcessor extends FusProcessor {
                 switch (i) {
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '[' -> {
+                        result.append("$uite.$(");
                         $state.in($state.raw()).reset(State.AFTER_BT);
                         $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
+                    }
+                    case '#' -> {
+                        $state.in($state.raw()).reset(State.AFTER_BT);
+                        $state.aimedAdd($state.raw(), State.BT_HASH);
                     }
                     case ',' -> {
                         advance('[');
                         advance(']');
                     }
+                    case '&' -> $state.aimedAdd($state.raw(), State.BT_AMPERSAND);
                     default -> {
                         if (!Character.isWhitespace(i)) {
                             $state.in($state.raw()).reset(State.BT_NEXT);
-                            advance(i); return;
+                            advance(i);
+                            return;
                         }
                     }
+                }
+            }
+            case BT_AMPERSAND -> {
+                $state.unset($state.raw());
+                if(i == '[') {
+                    result.append("$uite.$(");
+                    $state.in($state.raw()).reset(State.AFTER_BT);
+                    $state.aimedAdd($state.raw(), State.EXP_END);
+                    $state.aimedAdd($state.raw(), State.AMP_BT);
+                } else {
+                    result.append("&");
+                    $state.in($state.raw()).reset(State.BT_NEXT);
+                    advance(i);
+                    return;
+                }
+            }
+            case BT_NEXT_AMPERSAND -> {
+                $state.unset($state.raw());
+                if(i == '[') {
+                    result.append(",$uite.$(");
+                    $state.in($state.raw()).reset(State.AFTER_BT);
+                    $state.aimedAdd($state.raw(), State.EXP_END);
+                    $state.aimedAdd($state.raw(), State.AMP_BT);
+                } else {
+                    result.append("&");
+                    $state.in($state.raw()).reset(State.BT_NEXT);
+                    advance(i);
+                    return;
                 }
             }
             case BT_NEXT -> {
@@ -732,12 +818,17 @@ public class FusBodyProcessor extends FusProcessor {
                         result.append(")");
                     }
                     case '[' -> {
+                        result.append(",$uite.$(");
                         $state.in($state.raw()).reset(State.AFTER_BT);
                         $state.aimedAdd($state.raw(), State.BT);
-                        result.append(",$uite.$(");
                     }
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
-                    case '#' -> $state.aimedAdd($state.raw(), State.BT_HASH);
+                    case '#' -> {
+                        result.append(",");
+                        $state.in($state.raw()).reset(State.AFTER_BT);
+                        $state.aimedAdd($state.raw(), State.BT_HASH);
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.BT_NEXT_AMPERSAND);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '<' -> $state.aimedAdd($state.raw(), State.BEAK);
@@ -764,9 +855,10 @@ public class FusBodyProcessor extends FusProcessor {
             }
             case AFTER_BT -> {
                 switch (i) {
-                    case ']', '[' -> {
+                    case ']', '[', '#', '&' -> {
                         $state.in($state.raw()).reset(State.BT_NEXT);
-                        advance(i); return;
+                        advance(i);
+                        return;
                     }
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case ',' -> {
@@ -777,7 +869,8 @@ public class FusBodyProcessor extends FusProcessor {
                         if (!Character.isWhitespace(i)) {
                             result.append(",");
                             $state.in($state.raw()).reset(State.BT_NEXT);
-                            advance(i); return;
+                            advance(i);
+                            return;
                         }
                     }
                 }
@@ -787,31 +880,38 @@ public class FusBodyProcessor extends FusProcessor {
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '[' -> {
                         $state.unset($state.raw());
-                        $state.aimedAdd($state.raw(), State.BT);
-                        result.append("$uite.$(");
+                        $state.aimedAdd($state.raw(), State.BTHS_END);
+                        $state.aimedAdd($state.raw(), State.STRHS_EXP);
+                    }
+                    case '(' -> {
+                        result.append("new Suite.Mask(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
                     }
                     default -> {
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.BT_HASH_STRING);
                         token = new StringBuilder();
-                        advance(i); return;
+                        advance(i);
+                        return;
                     }
                 }
             }
+            case BTHS_END -> {
+                $state.unset($state.raw());
+            }
             case BT_HASH_STRING -> {
-                switch (i) {
-                    case '[', ']' -> {
-                        var str = token.toString().replaceFirst("$\s+\n", "").stripTrailing();
-                        result.append("\"\"\"\n").append(str).append("\"\"\"");
-                        $state.unset($state.raw());
-                        advance(i); return;
-                    }
-                    case '\\' -> $state.aimedAdd($state.raw(), State.BTHS_BACKSLASH);
-                    case ',' -> {
-                        advance('[');
-                        advance(']');
-                    }
-                    default -> token.appendCodePoint(i);
+                if(Character.isJavaIdentifierPart(i) || i == ' ') {
+                    token.appendCodePoint(i);
+                } else if(i == '\\') {
+                    $state.aimedAdd($state.raw(), State.BTHS_BACKSLASH);
+                } else {
+                    var str = token.toString().strip();
+                    result.append("\"").append(str).append("\"");
+                    $state.unset($state.raw());
+                    advance(i);
+                    return;
                 }
             }
             case BTHS_BACKSLASH -> {
@@ -820,13 +920,145 @@ public class FusBodyProcessor extends FusProcessor {
                         token.appendCodePoint(i);
                         $state.unset($state.raw());
                     }
-                    case '\\' -> {
-                        token.append("\\\\\\\\");
+                    case 'd' -> {
+                        token.append("\\\\");
                         $state.unset($state.raw());
                     }
-                    default -> {
-                        token.append("\\\\").appendCodePoint(i);
+                    case '\\', '\n' -> {
                         $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.BACKSLASH);
+                        advance(i);
+                        return;
+                    }
+                    default -> {
+                        token.append("\\").appendCodePoint(i);
+                        $state.unset($state.raw());
+                    }
+                }
+            }
+            case AMP_BT -> {
+                switch (i) {
+                    case '#' -> {
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AMP_BT_NEXT);
+                        $state.aimedAdd($state.raw(), State.AMP_BT_HASH);
+                    }
+                    case ']' -> {
+                        result.append(")");
+                        $state.unset($state.raw());
+                    }
+                    case '[' -> {
+                        result.append("$uite.$(");
+                        $state.aimedAdd($state.raw(), State.AMP_BT);
+                    }
+                    default -> {
+                        if(!Character.isWhitespace(i)) {
+                            result.append("$uite.$(");
+                            $state.unset($state.raw());
+                            $state.aimedAdd($state.raw(), State.AMP_BT_NEXT);
+                            advance(i);
+                            return;
+                        }
+                    }
+                }
+            }
+            case AMP_BT_NEXT -> {
+                switch (i) {
+                    case '"' -> {
+                        $state.aimedAdd($state.raw(), State.STRING);
+                        result.appendCodePoint(i);
+                    }
+                    case '\'' -> {
+                        $state.aimedAdd($state.raw(), State.CHARACTER);
+                        result.appendCodePoint(i);
+                    }
+                    case '(' -> {
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
+                        result.appendCodePoint(i);
+                    }
+                    case ']' -> {
+                        result.append(")");
+                        $state.unset($state.raw());
+                    }
+                    case '[' -> {
+                        result.append("),$uite.$(");
+                        $state.aimedAdd($state.raw(), State.AMP_BT_AFTER);
+                        $state.aimedAdd($state.raw(), State.AMP_BT);
+                    }
+                    case '@' -> $state.aimedAdd($state.raw(), State.AT);
+                    case '#' -> {
+                        result.append("),");
+                        $state.aimedAdd($state.raw(), State.AMP_BT_AFTER);
+                        $state.aimedAdd($state.raw(), State.AMP_BT_HASH);
+                    }
+                    case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
+                    case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    case '<' -> $state.aimedAdd($state.raw(), State.BEAK);
+                    case '>' -> $state.aimedAdd($state.raw(), State.BACKBEAK);
+                    case '{' -> {
+                        subProcessor = new FusyFunProcessor(this);
+                        subProcessor.getReady();
+                        $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                    }
+                    case ',' -> $state.aimedAdd($state.raw(), State.AMP_BT_NEXT_COMMA);
+                    default -> {
+                        if (Character.isJavaIdentifierPart(i)) {
+                            $state.aimedAdd($state.raw(), State.ID);
+                            token = new StringBuilder();
+                            advance(i);
+                            return;
+                        } else if (!Character.isWhitespace(i)) {
+                            result.appendCodePoint(i);
+                        }
+                    }
+                }
+            }
+            case AMP_BT_NEXT_COMMA -> {
+                if(i == '[') {
+                    $state.unset($state.raw());
+                    advance(i);
+                    return;
+                } else if(!Character.isWhitespace(i)) {
+                    result.append("),$uite.$(");
+                    $state.unset($state.raw());
+                    advance(i);
+                    return;
+                }
+            }
+            case AMP_BT_AFTER -> {
+                if(i == ',' || i == ']') {
+                    $state.unset($state.raw());
+                    advance(i);
+                    return;
+                } else if(!Character.isWhitespace(i)) {
+                    $state.unset($state.raw());
+                    advance(',');
+                    advance(i);
+                    return;
+                }
+            }
+            case AMP_BT_HASH -> {
+                switch (i) {
+                    case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    case '[' -> {
+                        result.append("(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.BTHS_END);
+                        $state.aimedAdd($state.raw(), State.STRHS_EXP);
+                    }
+                    case '(' -> {
+                        result.append("(new Suite.Mask(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
+                    }
+                    default -> {
+                        result.append("$uite.$(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.BT_HASH_STRING);
+                        token = new StringBuilder();
+                        advance(i);
+                        return;
                     }
                 }
             }
@@ -834,7 +1066,13 @@ public class FusBodyProcessor extends FusProcessor {
                 switch (i) {
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
-                    case '#' -> $state.aimedAdd($state.raw(), State.BT_HASH);
+                    case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '"' -> {
                         $state.aimedAdd($state.raw(), State.STRING);
@@ -892,6 +1130,12 @@ public class FusBodyProcessor extends FusProcessor {
                         $state.unset($state.raw());
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '&' -> $state.aimedAdd($state.raw(), State.AMPERSAND);
                     case '@' -> $state.aimedAdd($state.raw(), State.AT);
                     case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
                     case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
