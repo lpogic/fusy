@@ -33,6 +33,11 @@ public class FusyFunProcessor extends FusProcessor {
     }
 
     @Override
+    public FusDebugger getDebugger() {
+        return parentProcessor.getDebugger();
+    }
+
+    @Override
     public void advance(int i) {
         switch ($state.in().as(State.class)) {
             case ARGUMENTS_TYPE -> {

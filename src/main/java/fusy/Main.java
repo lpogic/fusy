@@ -5,15 +5,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Scanner;
 
 
 public class Main {
 
     public static void main(String[] args) {
-        args = new String[]{"skrypt.txt"};
+//        args = new String[]{"skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {
@@ -41,6 +39,9 @@ public class Main {
                         try {
                             str = str.replaceAll("\"", "");
                             run(str);
+                        }
+                        catch (DebuggerException de) {
+                            System.err.println(de.getMessage());
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -58,12 +59,7 @@ public class Main {
 
     static void run(String fus) throws IOException, InterruptedException {
         var debugger = new FusDebugger();
-        debugger.getReady();
-        Files.readAllLines(Path.of(fus)).forEach(str -> {
-            str.codePoints().forEach(debugger::advance);
-            debugger.advance('\n');
-        });
-        var program = debugger.finish().in(FusDebugger.Result.COMPLETE).asString();
+        var program = debugger.process(fus).in(FusDebugger.Result.COMPLETE).asString();
         var output = new FileOutputStream("fusy.java");
         var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
         writer.write(program);

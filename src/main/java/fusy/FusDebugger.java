@@ -1,6 +1,9 @@
 package fusy;
 import suite.suite.Subject;
 
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+
 import static suite.suite.$uite.$;
 
 public class FusDebugger extends FusProcessor {
@@ -15,6 +18,7 @@ public class FusDebugger extends FusProcessor {
     StringBuilder line;
     int lineCounter;
     FusBodyProcessor processor;
+    Subject sources;
 
     @Override
     public void getReady() {
@@ -22,6 +26,45 @@ public class FusDebugger extends FusProcessor {
         processor.getReady();
         line = new StringBuilder();
         lineCounter = 1;
+        sources = $();
+    }
+
+    public void pushSource(String source) {
+        if (sources.present(source))
+            throw new DebuggerException(source + " EXCEPTION AT LINE " + lineCounter + ": cyclic insert " + source);
+        try {
+            var file = new File(source);
+            var fis = new FileInputStream(file);
+            var reader = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
+            sources.aimedPut(sources.raw(), source, reader);
+        } catch (FileNotFoundException e) {
+            throw new DebuggerException(source + " EXCEPTION AT LINE " + lineCounter + ": insert " + source + " not found");
+        }
+    }
+
+    @Override
+    public FusDebugger getDebugger() {
+        return this;
+    }
+
+    @Override
+    public Subject process(String str) {
+        getReady();
+        pushSource(str);
+        while(sources.present()) {
+            try {
+                int cp = sources.in().as(BufferedReader.class).read();
+                if (cp == -1) {
+                    sources.unset(sources.raw());
+                    advance('\n');
+                } else if(cp != '\r') {
+                    advance(cp);
+                }
+            } catch (IOException ioe) {
+                throw new DebuggerException(sources.asString() + " EXCEPTION AT LINE " + lineCounter + ": io error");
+            }
+        }
+        return finish();
     }
 
     @Override
@@ -34,9 +77,10 @@ public class FusDebugger extends FusProcessor {
         }
         try {
             processor.advance(i);
+        } catch (DebuggerException de) {
+            throw de;
         } catch (Exception e) {
-            String str = "EXCEPTION AT LINE " + lineCounter + ": " + line.toString();
-            throw new RuntimeException(str);
+            throw new DebuggerException(sources.asString() + " EXCEPTION AT LINE " + lineCounter + ": " + line.toString());
         }
     }
 
@@ -70,7 +114,7 @@ public class FusDebugger extends FusProcessor {
                         new fusy();
                     }
                     
-                    fusy() {
+                    fusy(){
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                 + "}\n" +
                 $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """

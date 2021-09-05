@@ -7,7 +7,5 @@ public abstract class FusProcessor implements IntProcessor {
     Subject $state;
 
     public abstract void terminateSubProcess();
-//    public void getReady(Object initState){
-//        getReady();
-//    }
+    public abstract FusDebugger getDebugger();
 }
