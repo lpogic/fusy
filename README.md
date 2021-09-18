@@ -96,3 +96,5 @@ Shortest path from 'a' to 'e':
 Shortest path from 'a' to 'f':
 [ a-->c-->f ]
 ```
+
+Więcej przykładów na https://github.com/lpogic/fusy-rosetta-code
