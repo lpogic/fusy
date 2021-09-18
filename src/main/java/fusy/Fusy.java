@@ -2,7 +2,6 @@ package fusy;
 
 import suite.suite.Subject;
 import suite.suite.Suite;
-import suite.suite.util.Browser;
 import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 import suite.suite.util.Series;
@@ -18,15 +17,29 @@ import java.util.function.Supplier;
 public class Fusy {
     static Scanner scanner = new Scanner(System.in);
 
-    public static void main(String[] args) {
-        System.out.println(Sequence.of(1,2,3).toString(",","and"));
+    public static<T> T idle(T t) {
+        return t;
     }
 
-    public static String readln() {
+    public static void hold(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ignored) {}
+    }
+
+    public static long time() {
+        return System.currentTimeMillis();
+    }
+
+    public static File file(String path) {
+        return new File(path);
+    }
+
+    public static String rln() {
         return scanner.nextLine();
     }
 
-    public static String readln(Object prompt) {
+    public static String rln(Object prompt) {
         System.out.print(prompt);
         return scanner.nextLine();
     }
@@ -95,15 +108,15 @@ public class Fusy {
         }
     }
 
-    public static void println(Object o) {
+    public static void pln(Object o) {
         System.out.println(o);
     }
 
-    public static void println() {
+    public static void pln() {
         System.out.println();
     }
 
-    public static void println(Object ... on) {
+    public static void pln(Object ... on) {
         print(on);
         System.out.println();
     }
@@ -120,7 +133,7 @@ public class Fusy {
     }
 
     public static void pause() {
-        readln("Kliknij ENTER aby kontynuowac");
+        rln("Kliknij ENTER aby kontynuowac");
     }
 
     public static Subject mix(Series s) {
@@ -222,8 +235,25 @@ public class Fusy {
         };
     }
 
+    public static Sequence<Integer> range(int from) {
+        return () -> new Iterator<>() {
+            int f = from;
+            public boolean hasNext() {
+                return true;
+            }
+
+            public Integer next() {
+                return f++;
+            }
+        };
+    }
+
+    public static Sequence<Integer> range(boolean fromInclusive, int from) {
+        return fromInclusive ? range(from) : range(from + 1);
+    }
+
     public static Sequence<Integer> range(int from, int to) {
-        return from < to ? () -> new Iterator<>() {
+        return () -> new Iterator<>() {
             int f = from;
             public boolean hasNext() {
                 return f <= to;
@@ -232,25 +262,75 @@ public class Fusy {
             public Integer next() {
                 return f++;
             }
-        } : () -> new Iterator<>() {
-            int f = from;
+        };
+    }
+
+    public static Sequence<Integer> range(boolean fromInclusive, int from, int to, boolean toInclusive) {
+        return fromInclusive ? toInclusive ? range(from, to) : range(from, to - 1) :
+            toInclusive ? range(from + 1, to) : range(from + 1, to - 1);
+    }
+
+    public static Sequence<Long> range(long from, long to) {
+        return () -> new Iterator<>() {
+            long f = from;
             public boolean hasNext() {
-                return f >= to;
+                return f <= to;
             }
 
-            public Integer next() {
-                return f--;
+            public Long next() {
+                return f++;
             }
         };
     }
 
-    public static void swap(Subject s, Object k1, Object k2) {
-        var s1 = s.in(k1).get();
-        var s2 = s.in(k2).get();
-        if(s1.absent()) System.err.println("Subject in " + k1 + "is absent");
-        if(s2.absent()) System.err.println("Subject in " + k2 + "is absent");
-        s.inset(k1, s2);
-        s.inset(k2, s1);
+    public static Sequence<Long> range(boolean fromInclusive, long from, long to, boolean toInclusive) {
+        return fromInclusive ? toInclusive ? range(from, to) : range(from, to - 1L) :
+            toInclusive ? range(from + 1L, to) : range(from + 1L, to - 1L);
+    }
+
+    public static Sequence<Integer> steps() {
+        return () -> new Iterator<>() {
+            int f = 0;
+            public boolean hasNext() {
+                return true;
+            }
+
+            public Integer next() {
+                return f++;
+            }
+        };
+    }
+
+    public static Sequence<Integer> steps(int length) {
+        return steps(length, 0);
+    }
+
+    public static Sequence<Integer> steps(int length, int first) {
+        if(length > 0) {
+            return () -> new Iterator<>() {
+                int f = first;
+                final int l = first + length;
+                public boolean hasNext() {
+                    return f < l;
+                }
+
+                public Integer next() {
+                     return f++;
+                }
+            };
+        } else if(length < 0) {
+            return () -> new Iterator<>() {
+                int f = first;
+                final int l = first + length;
+                public boolean hasNext() {
+                    return f > l;
+                }
+
+                public Integer next() {
+                     return f--;
+                }
+            };
+        } else return Sequence.empty();
     }
 
     public static Series codePoints(String str) {

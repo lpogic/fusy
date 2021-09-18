@@ -76,11 +76,19 @@ public class FusDebugger extends FusProcessor {
             line.appendCodePoint(i);
         }
         try {
-            processor.advance(i);
+            advance(i, false);
         } catch (DebuggerException de) {
             throw de;
         } catch (Exception e) {
-            throw new DebuggerException(sources.asString() + " EXCEPTION AT LINE " + lineCounter + ": " + line.toString());
+            throw new DebuggerException(sources.asString("") + " EXCEPTION AT LINE " + lineCounter + ": " + line.toString());
+        }
+    }
+
+    public void advance(int i, boolean outputAppend) {
+        if(outputAppend) { 
+            advance(i);
+        } else {
+            processor.advance(i);
         }
     }
 
@@ -97,7 +105,7 @@ public class FusDebugger extends FusProcessor {
                 import java.io.File;
                 import static fusy.Fusy.*;
                 import static fusy.FusyFun.*;
-                import static java.lang.Thread.*;
+                import fusy.FusyDrop;
                 import suite.suite.$uite;
                 import suite.suite.Suite;
                 import suite.suite.action.*;
@@ -111,10 +119,10 @@ public class FusDebugger extends FusProcessor {
                 @SuppressWarnings("unchecked")
                 class fusy {
                     public static void main(String[] args) throws Exception {
-                        new fusy();
+                        new fusy(args);
                     }
                     
-                    fusy(){
+                    fusy(String[] args){
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                 + "}\n" +
                 $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
