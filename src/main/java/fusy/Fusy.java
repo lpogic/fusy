@@ -6,9 +6,8 @@ import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 import suite.suite.util.Series;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.io.*;
+import java.net.URL;
 import java.util.*;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -16,6 +15,10 @@ import java.util.function.Supplier;
 
 public class Fusy {
     static Scanner scanner = new Scanner(System.in);
+
+    public static void main(String[] args) {
+
+    }
 
     public static<T> T idle(T t) {
         return t;
@@ -31,8 +34,29 @@ public class Fusy {
         return System.currentTimeMillis();
     }
 
-    public static File file(String path) {
-        return new File(path);
+    public static InputStreamReader inputFile(String path) {
+        try {
+            return new InputStreamReader(new FileInputStream(path));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static InputStreamReader inputUrl(String path) {
+        try {
+            var url = new URL(path);
+            return new InputStreamReader(url.openStream());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static OutputStreamWriter outputFile(String path) {
+        try {
+            return new OutputStreamWriter(new FileOutputStream(path));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String rln() {
@@ -142,6 +166,13 @@ public class Fusy {
         return Suite.alter(list);
     }
 
+    public static Sequence<Series> words(Subject sub, int size, boolean repetition) {
+        if(!repetition) return words(sub, size);
+        var m = new Series[size];
+        for(int i = 0;i < size; ++i) m[i] = sub.front();
+        return manifold(m);
+    }
+
     public static Sequence<Series> words(Subject sub) {
         return words(sub, sub.size());
     }
@@ -177,18 +208,16 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Series> words(Subject sub, int size, boolean repetition) {
-        if(!repetition) return words(sub, size);
+    public static Sequence<Series> manifold(Series ... s) {
         return () -> new Iterator<>(){
             final Subject export = Suite.set();
             final Subject sc = Suite.set();
             {
-                for(int i = 0 ;i < size; ++i) {
-                    var auto = new Suite.Auto();
-                    var c = sub.cascade();
-                    sc.put(c, auto);
-                    if(i == 0) export.set(auto);
-                    else export.inset(auto, c.next());
+                for(int i = 0 ;i < s.length; ++i) {
+                    var c = s[i].cascade();
+                    sc.put(c, s[i]);
+                    if(i == 0) export.set(s[i]);
+                    else export.inset(s[i], c.next());
                 }
             }
 
@@ -207,9 +236,10 @@ public class Fusy {
                         export.inset($c.in().raw(), c.next());
                         return export.eachIn();
                     } else {
-                        var c1 = sub.cascade();
+                        var s1 = $c.in().as(Series.class);
+                        var c1 = s1.cascade();
                         sc.swap(c, c1);
-                        export.inset($c.in().raw(), c1.next());
+                        export.inset(s1, c1.next());
                     }
                 }
                 throw new IllegalStateException();
@@ -333,18 +363,33 @@ public class Fusy {
         } else return Sequence.empty();
     }
 
-    public static Series codePoints(String str) {
-        return Sequence.ofEntire(() -> str.codePoints().iterator()).series();
+    public static Sequence<Integer> letters(String str) {
+        return Sequence.ofEntire(() -> str.codePoints().iterator());
     }
 
-    public static Sequence<String> lines(File file) {
-        return Sequence.ofEntire(() -> {
-            try {
-                return Files.lines(file.toPath()).iterator();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+    public static Sequence<String> lines(Reader reader) {
+        var bufferedReader = reader instanceof BufferedReader b ? b : new BufferedReader(reader);
+        return () -> new Iterator<>() {
+            String next = null;
+
+            @Override
+            public boolean hasNext() {
+                try {
+                    return (next = bufferedReader.readLine()) != null;
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
             }
-        });
+
+            @Override
+            public String next() {
+                try {
+                    return next != null ? next : bufferedReader.readLine();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 
     public static Sequence<String> split(String splitted, String splitter) {
