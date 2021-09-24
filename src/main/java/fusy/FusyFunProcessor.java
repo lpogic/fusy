@@ -77,11 +77,25 @@ public class FusyFunProcessor extends FusProcessor {
     @Override
     public Subject finish() {
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append("FusyFun").append($argumentTypes.size()).append("<");
-        for(var $ : $argumentTypes.eachIn()) {
-            stringBuilder.append($.asString()).append(",");
+        if("void".equals(returnType)) {
+            if($argumentTypes.present()) {
+                stringBuilder.append("FusyFun").append($argumentTypes.size()).append("V<");
+                var c = $argumentTypes.eachIn().cascade();
+                for (var $ : c) {
+                    stringBuilder.append($.asString());
+                    if(c.hasNext()) stringBuilder.append(",");
+                }
+                stringBuilder.append(">");
+            } else {
+                stringBuilder.append("FusyFun0V");
+            }
+        } else {
+            stringBuilder.append("FusyFun").append($argumentTypes.size()).append("<");
+            for (var $ : $argumentTypes.eachIn()) {
+                stringBuilder.append($.asString()).append(",");
+            }
+            stringBuilder.append(returnType).append(">");
         }
-        stringBuilder.append(returnType).append(">");
         return $(Result.COMPLETE, $(stringBuilder.toString()));
     }
 }
