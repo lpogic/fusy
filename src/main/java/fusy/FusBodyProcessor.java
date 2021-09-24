@@ -14,7 +14,8 @@ public class FusBodyProcessor extends FusProcessor {
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         AT, AT_TYPE, LAMBDA, LAMBDA_EXP, BEAK, BACKBEAK, FUSY_FUN, FUSY_TYPE, HASH, DOLLAR_STRING,
         ES_PLUS, ES_MINUS, EXCLAMATION, CATCH_SCOPE_EXP, CSE_ID, AFTER_BTI, HASH_ID, STATEMENT_VARIABLE,
-        TRY_ID, TRY_SCOPE_EXP, DOLLAR, DOLLAR_BRACE_STRING, DBS_END, TYPED_VAR, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP
+        TRY_ID, TRY_SCOPE_EXP, DOLLAR, DOLLAR_BRACE_STRING, DBS_END, TYPED_VAR, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP,
+        ASSIGN_EXP
     }
 
     enum Result {
@@ -340,7 +341,7 @@ public class FusBodyProcessor extends FusProcessor {
                         result.append(".alter(");
                         $state.unset($state.raw());
                         $state.aimedAdd($state.raw(), State.EXP_END);
-                        $state.aimedAdd($state.raw(), State.LAMBDA_EXP);
+                        $state.aimedAdd($state.raw(), State.ASSIGN_EXP);
                     }
                     default -> {
                         if (Character.isJavaIdentifierStart(i)) {
@@ -524,6 +525,54 @@ public class FusBodyProcessor extends FusProcessor {
                     case ')', ',', '\n', ']' -> {
                         $state.unset($state.raw());
                         advance(i); return;
+                    }
+                    case '#' -> $state.aimedAdd($state.raw(), State.HASH);
+                    case '$' -> $state.aimedAdd($state.raw(), State.DOLLAR);
+                    case '[' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.BT);
+                        result.append("$uite.$(");
+                    }
+                    case '@' -> $state.aimedAdd($state.raw(), State.AT);
+                    case '!' -> $state.aimedAdd($state.raw(), State.EXCLAMATION);
+                    case '\\' -> $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    case '<' -> $state.aimedAdd($state.raw(), State.BEAK);
+                    case '>' -> $state.aimedAdd($state.raw(), State.BACKBEAK);
+                    case '{' -> {
+                        subProcessor = new FusyFunProcessor(this);
+                        subProcessor.getReady();
+                        $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                    }
+                    default -> {
+                        if (Character.isJavaIdentifierPart(i)) {
+                            $state.aimedAdd($state.raw(), State.ID);
+                            token = new StringBuilder();
+                            advance(i); return;
+                        } else {
+                            result.appendCodePoint(i);
+                        }
+                    }
+                }
+            }
+            case ASSIGN_EXP -> {
+                switch (i) {
+                    case '"' -> {
+                        $state.aimedAdd($state.raw(), State.AFTER_ID);
+                        $state.aimedAdd($state.raw(), State.STRING);
+                        result.appendCodePoint(i);
+                    }
+                    case '\'' -> {
+                        $state.aimedAdd($state.raw(), State.CHARACTER);
+                        result.appendCodePoint(i);
+                    }
+                    case '(' -> {
+                        $state.aimedAdd($state.raw(), State.EXPRESSION);
+                        result.appendCodePoint(i);
+                    }
+                    case ')', ',', '\n', ']', ';' -> {
+                        $state.unset($state.raw());
+                        advance(i);
+                        return;
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
                     case '$' -> $state.aimedAdd($state.raw(), State.DOLLAR);
@@ -835,6 +884,14 @@ public class FusBodyProcessor extends FusProcessor {
                         $state.aimedAdd($state.raw(), State.AFTER_BTI);
                         $state.aimedAdd($state.raw(), State.EXP_END);
                         $state.aimedAdd($state.raw(), State.DOLLAR_STRING);
+                    }
+                    case '[' -> {
+                        result.append(".in(");
+                        $state.unset($state.raw());
+                        $state.aimedAdd($state.raw(), State.AFTER_BTI);
+                        $state.aimedAdd($state.raw(), State.IGNORE);
+                        $state.aimedAdd($state.raw(), State.EXP_END);
+                        $state.aimedAdd($state.raw(), State.RB_EXP);
                     }
                     default -> {
                         if (Character.isJavaIdentifierPart(i)) {
@@ -1550,11 +1607,9 @@ public class FusBodyProcessor extends FusProcessor {
                     default -> {
                         if (!Character.isWhitespace(i)) {
                             $state.unset($state.raw());
-                            result.append("else{");
-                            $state.aimedAdd($state.raw(), State.SCOPE_EXP);
-                            statementBeginIndex = result.length();
-                            buffer = new StringBuilder();
-                            result.append("if");
+                            $state.aimedAdd($state.raw(), State.NAKED_SCOPE_EXP_STAT);
+                            $state.aimedAdd($state.raw(), State.LAMBDA_EXP);
+                            result.append("else if(");
                             advance(i);
                             return;
                         }

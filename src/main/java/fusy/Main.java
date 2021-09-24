@@ -13,6 +13,9 @@ import java.util.regex.Pattern;
 
 public class Main {
 
+    static String javaHome = System.getProperty("java.home");
+    static boolean isWindows = System.getProperty("os.name").startsWith("Windows");
+
     public static void main(String[] args) {
 //        args = new String[]{"skrypt.txt"};
         if(args.length < 1) {
@@ -70,19 +73,22 @@ public class Main {
     static void run(File fus, String[] args) throws IOException, InterruptedException {
         var debugger = new FusDebugger();
         var program = debugger.process(fus.getPath()).in(FusDebugger.Result.COMPLETE).asString();
-        var output = new FileOutputStream("fusy.java");
+        var sep = isWindows ? "\\" : "/";
+        var output = new FileOutputStream(javaHome + sep + "fusy.java");
         var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
         writer.write(program);
         writer.flush();
         output.close();
         var pb = new ProcessBuilder();
-        var fusyDir = System.getProperty("user.dir");
-        var sep = "\\";
         var cmd = new ArrayList<String>();
-        cmd.add("cmd");
-        cmd.add("/c");
-        cmd.add(fusyDir + sep + "jre" + sep + "bin" + sep + "java.exe");
-        cmd.add(fusyDir + sep + "fusy.java");
+        if(isWindows) {
+            cmd.add("cmd");
+            cmd.add("/c");
+            cmd.add(javaHome + sep + "bin" + sep + "java.exe");
+        } else {
+            cmd.add(javaHome + sep + "bin" + sep + "java");
+        }
+        cmd.add(javaHome + sep + "fusy.java");
         cmd.addAll(List.of(args));
         Process process = pb.
                 command(cmd).
@@ -93,9 +99,21 @@ public class Main {
     }
 
     static void last() throws IOException, InterruptedException {
+        var sep = isWindows ? "\\" : "/";
         var pb = new ProcessBuilder();
+        var cmd = new ArrayList<String>();
+        if(isWindows) {
+            cmd.add("cmd");
+            cmd.add("/c");
+            cmd.add("powershell");
+            cmd.add("-command");
+            cmd.add("\"start -verb edit '" + javaHome + sep + "fusy.java'\"");
+        } else {
+            cmd.add("less");
+            cmd.add(javaHome + sep + "fusy.java");
+        }
         Process process = pb.
-                command("cmd",  "/c", "powershell", "-command", "\"start -verb edit 'fusy.java'\"").
+                command(cmd).
                 directory(new File(".")).
                 inheritIO().
                 start();

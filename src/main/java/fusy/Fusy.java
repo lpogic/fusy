@@ -265,23 +265,6 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> range(int from) {
-        return () -> new Iterator<>() {
-            int f = from;
-            public boolean hasNext() {
-                return true;
-            }
-
-            public Integer next() {
-                return f++;
-            }
-        };
-    }
-
-    public static Sequence<Integer> range(boolean fromInclusive, int from) {
-        return fromInclusive ? range(from) : range(from + 1);
-    }
-
     public static Sequence<Integer> range(int from, int to) {
         return () -> new Iterator<>() {
             int f = from;
@@ -319,11 +302,8 @@ public class Fusy {
     }
 
     public static Sequence<Integer> steps() {
-        return () -> new Iterator<>() {
+        return () -> new Repeater<>() {
             int f = 0;
-            public boolean hasNext() {
-                return true;
-            }
 
             public Integer next() {
                 return f++;
@@ -331,36 +311,47 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> steps(int length) {
-        return steps(length, 0);
+    public static Sequence<Integer> steps(int s0) {
+        return steps(s0 , 1);
     }
 
-    public static Sequence<Integer> steps(int length, int first) {
-        if(length > 0) {
-            return () -> new Iterator<>() {
-                int f = first;
-                final int l = first + length;
-                public boolean hasNext() {
-                    return f < l;
-                }
+    public static Sequence<Integer> steps(int s0, int step) {
+        return () -> new Repeater<>() {
+            int last = s0;
 
-                public Integer next() {
-                     return f++;
-                }
-            };
-        } else if(length < 0) {
-            return () -> new Iterator<>() {
-                int f = first;
-                final int l = first + length;
-                public boolean hasNext() {
-                    return f > l;
-                }
+            @Override
+            public Integer next() {
+                int l = last;
+                last += step;
+                return l;
+            }
+        };
+    }
 
-                public Integer next() {
-                     return f--;
-                }
-            };
-        } else return Sequence.empty();
+    public static Sequence<Long> steps(long s0, long step) {
+        return () -> new Repeater<>() {
+            long last = s0;
+
+            @Override
+            public Long next() {
+                long l = last;
+                last += step;
+                return l;
+            }
+        };
+    }
+
+    public static Sequence<Float> steps(float s0, float step) {
+        return () -> new Repeater<>() {
+            float last = s0;
+
+            @Override
+            public Float next() {
+                float l = last;
+                last += step;
+                return l;
+            }
+        };
     }
 
     public static Sequence<Integer> letters(String str) {
@@ -394,26 +385,6 @@ public class Fusy {
 
     public static Sequence<String> split(String splitted, String splitter) {
         return Sequence.ofEntire(List.of(splitted.split(splitter)));
-    }
-
-    public static<T> Sequence<T> until(Supplier<T> sup, T stop) {
-        return () -> new Iterator<>() {
-            boolean hasNext = false;
-            T next;
-
-            @Override
-            public boolean hasNext() {
-                if(hasNext) return true;
-                next = sup.get();
-                return hasNext = !Objects.equals(next, stop);
-            }
-
-            @Override
-            public T next() {
-                hasNext = false;
-                return next;
-            }
-        };
     }
 
     public static<T> T min(Iterable<T> it, BiFunction<T, T, Integer> comparator) {
