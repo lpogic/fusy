@@ -1,10 +1,13 @@
 package fusy;
 
+import suite.suite.Suite;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
@@ -61,11 +64,26 @@ public class Main {
             }
         } else {
             try {
-                var a = new String[args.length - 1];
-                System.arraycopy(args, 1, a, 0, args.length - 1);
-                run(new File(args[0]), a);
-            } catch (Exception ignored) {
-                ignored.printStackTrace();
+                var $a = Suite.set();
+                boolean join = false;
+                for(var a : args) {
+                    if(isWindows) {
+                        $a.add(a);
+                    } else {
+                        if (a.endsWith("\\")) {
+                            a = a.substring(0, a.length() - 1);
+                            $a.add(join ? $a.take($a.last().raw()).in().asString() + " " + a : a);
+                            join = true;
+                        } else {
+                            $a.add(join ? $a.take($a.last().raw()).in().asString() + " " + a : a);
+                            join = false;
+                        }
+                    }
+                }
+                run(new File($a.in().asString()),
+                        $a.front($a.select(1).raw()).eachIn().eachString().toList().toArray(new String[0]));
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }

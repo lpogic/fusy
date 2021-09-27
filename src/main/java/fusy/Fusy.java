@@ -166,6 +166,24 @@ public class Fusy {
         return Suite.alter(list);
     }
 
+    public static Subject sort(Series s, Comparator<Subject> cmp) {
+        var list = Sequence.ofEntire(s).toList();
+        list.sort(cmp);
+        return Suite.alter(list);
+    }
+
+    public static<T, TE extends T> Sequence<TE> sort(Sequence<TE> s, Comparator<T> cmp) {
+        var list = s.toList();
+        list.sort(cmp);
+        return Sequence.ofEntire(list);
+    }
+
+    public static<T extends Comparable<T>> Sequence<T> sort(Sequence<T> s) {
+        var list = s.toList();
+        Collections.sort(list);
+        return Sequence.ofEntire(list);
+    }
+
     public static Sequence<Series> words(Subject sub, int size, boolean repetition) {
         if(!repetition) return words(sub, size);
         var m = new Series[size];
@@ -415,5 +433,9 @@ public class Fusy {
             options.unset(o.raw());
             return o;
         });
+    }
+
+    public static<T> Sequence<T> pull(Supplier<T> supplier) {
+        return Sequence.pull(supplier);
     }
 }

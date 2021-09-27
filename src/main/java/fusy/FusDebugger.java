@@ -122,7 +122,7 @@ public class FusDebugger extends FusProcessor {
                         new fusy(args);
                     }
                     
-                    fusy(String[] args){
+                    fusy(String[] args) throws Exception {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                 + "}\n" +
                 $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
