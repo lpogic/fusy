@@ -23,4 +23,6 @@ plugins.withType(JavaPlugin).configureEach {
 dependencies {
     implementation(project(":suite"))
     implementation(project(":brackettree"))
+    implementation(project(":bricks"))
+    implementation(project(":airbricks"))
 }

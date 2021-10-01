@@ -14,13 +14,14 @@ public class FusDefinitionProcessor extends FusProcessor {
     }
 
     enum Result {
-        STATEMENTS, IMPORTS
+        STATEMENTS, IMPORTS, SETUP
     }
 
     StringBuilder result;
     FusBodyProcessor parentProcessor;
     FusProcessor subProcessor;
     boolean isImport;
+    boolean isSetup;
     boolean isAbstract;
     boolean throwing;
     Subject imports;
@@ -32,6 +33,7 @@ public class FusDefinitionProcessor extends FusProcessor {
     @Override
     public void getReady() {
         isImport = false;
+        isSetup = false;
         isAbstract = false;
         throwing = false;
         imports = $();
@@ -41,6 +43,7 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     public void getReady(String type) {
         isImport = false;
+        isSetup = false;
         isAbstract = false;
         throwing = false;
         imports = $();
@@ -417,6 +420,14 @@ public class FusDefinitionProcessor extends FusProcessor {
                 fusBodyProcessor.getReady(FusBodyProcessor.State.STATEMENT);
                 subProcessor = fusBodyProcessor;
             }
+            case "setup" -> {
+                isSetup =  true;
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.INLINE_BODY);
+                var fusBodyProcessor = new FusBodyProcessor(this);
+                fusBodyProcessor.getReady(FusBodyProcessor.State.STATEMENT);
+                subProcessor = fusBodyProcessor;
+            }
             case "insert" -> $state.aimedAdd($state.raw(), State.INSERT);
             case "default", "final", "native", "private",
                     "protected", "public", "static", "strictfp", "transient", "volatile" -> {
@@ -450,7 +461,9 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     @Override
     public Subject finish() {
-        if(isImport) {
+        if(isSetup) {
+            return $(Result.SETUP, $(result.delete(result.length() - 2, result.length()).toString()));
+        } if(isImport) {
             return $(Result.IMPORTS, $($(result.toString())));
         } else {
             return $(

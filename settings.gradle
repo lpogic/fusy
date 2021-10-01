@@ -6,4 +6,9 @@ project(':suite').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/suite"
 include ':brackettree'
 project(':brackettree').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/brackettree")
 
+include ':bricks'
+project(':bricks').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/bricks")
+
+include ':airbricks'
+project(':airbricks').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/airbricks")
 

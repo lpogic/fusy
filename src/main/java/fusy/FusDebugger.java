@@ -100,7 +100,44 @@ public class FusDebugger extends FusProcessor {
     @Override
     public Subject finish() {
         var $program = processor.finish();
-        var program = """
+        var setup = $program.in(FusBodyProcessor.Result.SETUP).asString("");
+        var program = switch (setup) {
+            case "graphic" -> """
+                    import java.nio.file.*;
+                    import java.io.File;
+                    import static fusy.Fusy.*;
+                    import static fusy.FusyFun.*;
+                    import fusy.FusyDrop;
+                    import suite.suite.$uite;
+                    import suite.suite.Suite;
+                    import suite.suite.action.*;
+                    import suite.suite.Subject;
+                    import suite.suite.util.Series;
+                    import suite.suite.util.Sequence;
+                    import java.util.Objects;
+                    import java.util.Arrays;
+                    import airbricks.Wall;
+                    import fusy.graphic.Graphic;
+                    """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
+                                    
+                    @SuppressWarnings("unchecked")
+                    class fusy extends Graphic {
+                        public static void main(String[] args) throws Exception {
+                            Wall.play($uite.$(
+                                                Wall.class, $uite.$(new fusy()),
+                                                "w", $uite.$(800),
+                                                "h", $uite.$(800),
+                                                "title", $uite.$("Fusy window")
+                                        ));
+                        }
+                        
+                        public void setup() {
+                        """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
+                    + "}\n" +
+                    $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                }
+                """;
+            case "console", "" -> """
                 import java.nio.file.*;
                 import java.io.File;
                 import static fusy.Fusy.*;
@@ -124,10 +161,12 @@ public class FusDebugger extends FusProcessor {
                     
                     fusy(String[] args) throws Exception {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                + "}\n" +
-                $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                    + "}\n" +
+                    $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
+            default -> throw new DebuggerException("Unsupported setup " + setup);
+        };
         return $(Result.COMPLETE, $(program));
     }
 }

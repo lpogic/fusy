@@ -19,7 +19,7 @@ public class FusBodyProcessor extends FusProcessor {
     }
 
     enum Result {
-        STATEMENTS, DEFINITIONS, IMPORTS
+        STATEMENTS, DEFINITIONS, IMPORTS, SETUP
     }
 
     StringBuilder result;
@@ -30,6 +30,7 @@ public class FusBodyProcessor extends FusProcessor {
     FusProcessor subProcessor;
     Subject definitions;
     Subject imports;
+    String setup;
 
     public FusBodyProcessor(FusProcessor parentProcessor) {
         this.parentProcessor = parentProcessor;
@@ -536,7 +537,8 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                     case ')', ',', '\n', ']' -> {
                         $state.unset($state.raw());
-                        advance(i); return;
+                        advance(i);
+                        return;
                     }
                     case '#' -> $state.aimedAdd($state.raw(), State.HASH);
                     case '$' -> $state.aimedAdd($state.raw(), State.DOLLAR);
@@ -1638,10 +1640,14 @@ public class FusBodyProcessor extends FusProcessor {
         switch ($state.in().as(State.class)) {
             case DEFINITION -> {
                 var $ = subProcessor.finish();
-                definitions.add($.in(FusDefinitionProcessor.Result.STATEMENTS).asString(""));
-                imports.alter($.in(FusDefinitionProcessor.Result.IMPORTS));
+                if($.present(FusDefinitionProcessor.Result.SETUP)) {
+                    setup = $.in(FusDefinitionProcessor.Result.SETUP).asString();
+                } else {
+                    definitions.add($.in(FusDefinitionProcessor.Result.STATEMENTS).asString(""));
+                    imports.alter($.in(FusDefinitionProcessor.Result.IMPORTS));
+                }
                 $state.unset($state.raw());
-                if($state.in().as(State.class) == State.STATEMENT) {
+                if ($state.in().as(State.class) == State.STATEMENT) {
                     $state.unset($state.raw());
                 }
             }
@@ -1686,7 +1692,8 @@ public class FusBodyProcessor extends FusProcessor {
         return $(
                 Result.STATEMENTS, $(result.toString()),
                 Result.DEFINITIONS, $(defs.toString()),
-                Result.IMPORTS, $(imps.toString())
+                Result.IMPORTS, $(imps.toString()),
+                Result.SETUP, $(setup)
         );
     }
 }
