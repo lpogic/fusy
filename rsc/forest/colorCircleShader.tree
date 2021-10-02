@@ -9,16 +9,12 @@ uniform vec2 wallSize;
 
 out VS_OUT {
     vec4 color;
-    float radius;
-    float sm;
 } vs_out;
 
 void main()
 {
-    gl_Position = vec4(pos.x / wallSize.x * 2 - 1, -pos.y / wallSize.y * 2 + 1, 0, 1);
+    gl_Position = vec4(pos.x, pos.y, rad, 1);
     vs_out.color = col;
-    vs_out.radius = rad;
-    vs_out.sm = wallSize.x;
 }
 
 "GLSL ]
@@ -34,33 +30,31 @@ uniform vec2 wallSize;
 
 in VS_OUT {
     vec4 color;
-    float radius;
-    float sm;
 } gs_in[];
 
 out vec4 c;
 out vec4 p;
 
-void rect(vec4 position)
+void emit(vec4 position)
 {
-    float w = gs_in[0].radius * 2 / wallSize.x;
-    float h = gs_in[0].radius * 2 / wallSize.y;
     c = gs_in[0].color;
-    p = vec4((position.x + 1) / 2 * wallSize.x, (position.y + 1) * wallSize.y / 2,
-             gs_in[0].radius * gs_in[0].radius, gs_in[0].sm);
-    gl_Position = position + vec4(-w, -h, 0.0, 0.0); // 1:bottom-left
+    p = vec4(position.x, wallSize.y - position.y, position.b, 1.5);
+    float w = position.b * 2 / wallSize.x;
+    float h = position.b * 2 / wallSize.y;
+    vec2 pos = vec2(position.x / wallSize.x * 2 - 1, -position.y / wallSize.y * 2 + 1);
+    gl_Position = vec4(pos.x - w, pos.y - h, 0.0, 1.0); // 1:bottom-left
     EmitVertex();
-    gl_Position = position + vec4( w, -h, 0.0, 0.0); // 2:bottom-right
+    gl_Position = vec4(pos.x + w, pos.y - h, 0.0, 1.0); // 2:bottom-right
     EmitVertex();
-    gl_Position = position + vec4(-w,  h, 0.0, 0.0); // 3:top-left
+    gl_Position = vec4(pos.x - w, pos.y + h, 0.0, 1.0); // 3:top-left
     EmitVertex();
-    gl_Position = position + vec4( w,  h, 0.0, 0.0); // 4:top-right
+    gl_Position = vec4(pos.x + w, pos.y + h, 0.0, 1.0); // 4:top-right
     EmitVertex();
     EndPrimitive();
 }
 
 void main() {
-    rect(gl_in[0].gl_Position);
+    emit(gl_in[0].gl_Position);
 }
 
 "GLSL ]
@@ -77,8 +71,8 @@ void main()
 {
     float x = p.x - gl_FragCoord.x;
     float y = p.y - gl_FragCoord.y;
-    float d = p.z - x * x - y * y;
-    if(d < 0) color = vec4(0,0,0,0);
+    float d = p.z - sqrt(x * x + y * y);
+    if(d < 0) discard;
     else if(d < p.w) color = vec4(c.rgb, c.a * d / p.w);
     else color = c;
 }

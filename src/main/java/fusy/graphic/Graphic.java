@@ -1,7 +1,7 @@
 package fusy.graphic;
 
+import bricks.graphic.BluntLineBrick;
 import bricks.graphic.CircleBrick;
-import bricks.graphic.LineBrick;
 import bricks.graphic.RectangleBrick;
 import bricks.trade.Host;
 
@@ -26,7 +26,7 @@ public abstract class Graphic extends airbricks.Wall {
         }
     }
 
-    protected class Line extends LineBrick {
+    protected class Line extends BluntLineBrick {
 
         public Line() {
             super(Graphic.this);
