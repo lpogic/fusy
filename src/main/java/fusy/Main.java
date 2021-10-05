@@ -19,7 +19,7 @@ public class Main {
     static boolean isWindows = System.getProperty("os.name").startsWith("Windows");
 
     public static void main(String[] args) {
-//        args = new String[]{"skrypt.txt"};
+//        javaHome = "."; args = new String[]{"skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {

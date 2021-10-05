@@ -3,6 +3,7 @@ package fusy.graphic;
 import bricks.graphic.BluntLineBrick;
 import bricks.graphic.CircleBrick;
 import bricks.graphic.RectangleBrick;
+import bricks.graphic.TextBrick;
 import bricks.trade.Host;
 
 import java.util.List;
@@ -29,6 +30,13 @@ public abstract class Graphic extends airbricks.Wall {
     protected class Line extends BluntLineBrick {
 
         public Line() {
+            super(Graphic.this);
+        }
+    }
+
+    protected class Text extends TextBrick {
+
+        public Text() {
             super(Graphic.this);
         }
     }

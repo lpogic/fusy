@@ -18,6 +18,7 @@ public class FusyTypeProcessor extends FusProcessor {
 
     Subject $types;
     StringBuilder result;
+    boolean arrayTypes;
     FusProcessor parentProcessor;
     FusProcessor subProcessor;
 
@@ -28,8 +29,13 @@ public class FusyTypeProcessor extends FusProcessor {
     @Override
     public void getReady() {
         result = new StringBuilder();
+        arrayTypes = true;
         $state = $($(State.BEFORE));
         $types = $();
+    }
+
+    public void arrayTypeEnabled(boolean enabled) {
+        arrayTypes = enabled;
     }
 
     @Override
@@ -61,8 +67,13 @@ public class FusyTypeProcessor extends FusProcessor {
                 } else if(Character.isJavaIdentifierPart(i) || i == '.') {
                     result.appendCodePoint(i);
                 } else if(i == '{') {
-                    result.append("[");
-                    $state.aimedAdd($state.raw(), State.ARRAY);
+                    if(arrayTypes) {
+                        result.append("[");
+                        $state.aimedAdd($state.raw(), State.ARRAY);
+                    } else {
+                        parentProcessor.terminateSubProcess();
+                        parentProcessor.advance(i);
+                    }
                 } else {
                     parentProcessor.terminateSubProcess();
                     parentProcessor.advance(i);

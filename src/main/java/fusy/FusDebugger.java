@@ -140,7 +140,7 @@ public class FusDebugger extends FusProcessor {
             case "console", "" -> """
                 import java.nio.file.*;
                 import java.io.File;
-                import static fusy.Fusy.*;
+                import fusy.Fusy;
                 import static fusy.FusyFun.*;
                 import fusy.FusyDrop;
                 import suite.suite.$uite;
@@ -154,7 +154,7 @@ public class FusDebugger extends FusProcessor {
                 """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                 
                 @SuppressWarnings("unchecked")
-                class fusy {
+                class fusy extends Fusy {
                     public static void main(String[] args) throws Exception {
                         new fusy(args);
                     }

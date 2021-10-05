@@ -14,27 +14,24 @@ import java.util.function.Supplier;
 
 
 public class Fusy {
-    static Scanner scanner = new Scanner(System.in);
+    protected Scanner in = new Scanner(System.in);
+    protected PrintStream out = System.out;
 
-    public static void main(String[] args) {
-
-    }
-
-    public static<T> T idle(T t) {
+    public<T> T idle(T t) {
         return t;
     }
 
-    public static void hold(long ms) {
+    public void hold(long ms) {
         try {
             Thread.sleep(ms);
         } catch (InterruptedException ignored) {}
     }
 
-    public static long time() {
+    public long time() {
         return System.currentTimeMillis();
     }
 
-    public static InputStreamReader inputFile(String path) {
+    public InputStreamReader inputFile(String path) {
         try {
             return new InputStreamReader(new FileInputStream(path));
         } catch (FileNotFoundException e) {
@@ -42,7 +39,7 @@ public class Fusy {
         }
     }
 
-    public static InputStreamReader inputUrl(String path) {
+    public InputStreamReader inputUrl(String path) {
         try {
             var url = new URL(path);
             return new InputStreamReader(url.openStream());
@@ -51,7 +48,7 @@ public class Fusy {
         }
     }
 
-    public static OutputStreamWriter outputFile(String path) {
+    public OutputStreamWriter outputFile(String path) {
         try {
             return new OutputStreamWriter(new FileOutputStream(path));
         } catch (FileNotFoundException e) {
@@ -59,143 +56,55 @@ public class Fusy {
         }
     }
 
-    public static String rln() {
-        return scanner.nextLine();
-    }
-
-    public static String rln(Object prompt) {
-        System.out.print(prompt);
-        return scanner.nextLine();
-    }
-
-    public static int readInt(Object prompt) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                return Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException ignored) {}
+    public OutputStreamWriter outputFile(String path, boolean append) {
+        try {
+            return new OutputStreamWriter(new FileOutputStream(path, append));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    public static int readInt(Object prompt, Object errorMsg) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                return Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException ignored) {
-                System.err.println(errorMsg);
-            }
-        }
+    public void pause() {
+        out.println("Kliknij ENTER aby kontynuowac");
+        in.next();
     }
 
-    public static int readInt(Object prompt, int min) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                var r = Integer.parseInt(scanner.nextLine());
-                if(r >= min) return r;
-            } catch (NumberFormatException ignored) {}
-        }
-    }
-
-    public static int readInt(Object prompt, int min, Object errorMsg) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                var r = Integer.parseInt(scanner.nextLine());
-                if(r >= min) return r;
-            } catch (NumberFormatException ignored) {
-                System.err.println(errorMsg);
-            }
-        }
-    }
-
-    public static int readInt(Object prompt, int min, int max) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                var r = Integer.parseInt(scanner.nextLine());
-                if(r >= min && r <= max) return r;
-            } catch (NumberFormatException ignored) {}
-        }
-    }
-
-    public static int readInt(Object prompt, int min, int max, Object errorMsg) {
-        while(true) {
-            try {
-                System.out.print(prompt);
-                var r = Integer.parseInt(scanner.nextLine());
-                if(r >= min && r <= max) return r;
-            } catch (NumberFormatException ignored) {
-                System.err.println(errorMsg);
-            }
-        }
-    }
-
-    public static void pln(Object o) {
-        System.out.println(o);
-    }
-
-    public static void pln() {
-        System.out.println();
-    }
-
-    public static void pln(Object ... on) {
-        print(on);
-        System.out.println();
-    }
-
-    public static void print(Object o) {
-        System.out.print(o);
-    }
-
-    public static void print(Object ... on) {
-        for(var o : on) {
-            System.out.print(o);
-            System.out.print('\t');
-        }
-    }
-
-    public static void pause() {
-        rln("Kliknij ENTER aby kontynuowac");
-    }
-
-    public static Subject mix(Series s) {
+    public Subject mix(Series s) {
         var list = Sequence.ofEntire(s).toList();
         Collections.shuffle(list);
         return Suite.alter(list);
     }
 
-    public static Subject sort(Series s, Comparator<Subject> cmp) {
+    public Subject sort(Series s, Comparator<Subject> cmp) {
         var list = Sequence.ofEntire(s).toList();
         list.sort(cmp);
         return Suite.alter(list);
     }
 
-    public static<T, TE extends T> Sequence<TE> sort(Sequence<TE> s, Comparator<T> cmp) {
+    public<T, TE extends T> Sequence<TE> sort(Sequence<TE> s, Comparator<T> cmp) {
         var list = s.toList();
         list.sort(cmp);
         return Sequence.ofEntire(list);
     }
 
-    public static<T extends Comparable<T>> Sequence<T> sort(Sequence<T> s) {
+    public<T extends Comparable<T>> Sequence<T> sort(Sequence<T> s) {
         var list = s.toList();
         Collections.sort(list);
         return Sequence.ofEntire(list);
     }
 
-    public static Sequence<Series> words(Subject sub, int size, boolean repetition) {
+    public Sequence<Series> words(Subject sub, int size, boolean repetition) {
         if(!repetition) return words(sub, size);
         var m = new Series[size];
         for(int i = 0;i < size; ++i) m[i] = sub.front();
         return manifold(m);
     }
 
-    public static Sequence<Series> words(Subject sub) {
+    public Sequence<Series> words(Subject sub) {
         return words(sub, sub.size());
     }
 
-    public static Sequence<Series> words(Subject sub, int size) {
+    public Sequence<Series> words(Subject sub, int size) {
         if(size < 1) return Sequence.of(Suite.set());
         if(size > sub.size()) throw new IndexOutOfBoundsException();
         return () -> new Iterator<>(){
@@ -226,7 +135,7 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Series> manifold(Series ... s) {
+    public Sequence<Series> manifold(Series ... s) {
         return () -> new Iterator<>(){
             final Subject export = Suite.set();
             final Subject sc = Suite.set();
@@ -265,7 +174,7 @@ public class Fusy {
         };
     }
 
-    public static int factorial(int in) {
+    public int factorial(int in) {
         return switch (in) {
             case 0, 1 -> 1;
             case 2 -> 2;
@@ -283,7 +192,7 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> range(int from, int to) {
+    public Sequence<Integer> range(int from, int to) {
         return () -> new Iterator<>() {
             int f = from;
             public boolean hasNext() {
@@ -296,12 +205,12 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> range(boolean fromInclusive, int from, int to, boolean toInclusive) {
+    public Sequence<Integer> range(boolean fromInclusive, int from, int to, boolean toInclusive) {
         return fromInclusive ? toInclusive ? range(from, to) : range(from, to - 1) :
             toInclusive ? range(from + 1, to) : range(from + 1, to - 1);
     }
 
-    public static Sequence<Long> range(long from, long to) {
+    public Sequence<Long> range(long from, long to) {
         return () -> new Iterator<>() {
             long f = from;
             public boolean hasNext() {
@@ -314,12 +223,12 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Long> range(boolean fromInclusive, long from, long to, boolean toInclusive) {
+    public Sequence<Long> range(boolean fromInclusive, long from, long to, boolean toInclusive) {
         return fromInclusive ? toInclusive ? range(from, to) : range(from, to - 1L) :
             toInclusive ? range(from + 1L, to) : range(from + 1L, to - 1L);
     }
 
-    public static Sequence<Integer> steps() {
+    public Sequence<Integer> steps() {
         return () -> new Repeater<>() {
             int f = 0;
 
@@ -329,11 +238,11 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> steps(int s0) {
+    public Sequence<Integer> steps(int s0) {
         return steps(s0 , 1);
     }
 
-    public static Sequence<Integer> steps(int s0, int step) {
+    public Sequence<Integer> steps(int s0, int step) {
         return () -> new Repeater<>() {
             int last = s0;
 
@@ -346,7 +255,7 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Long> steps(long s0, long step) {
+    public Sequence<Long> steps(long s0, long step) {
         return () -> new Repeater<>() {
             long last = s0;
 
@@ -359,7 +268,7 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Float> steps(float s0, float step) {
+    public Sequence<Float> steps(float s0, float step) {
         return () -> new Repeater<>() {
             float last = s0;
 
@@ -372,11 +281,11 @@ public class Fusy {
         };
     }
 
-    public static Sequence<Integer> letters(String str) {
+    public Sequence<Integer> letters(String str) {
         return Sequence.ofEntire(() -> str.codePoints().iterator());
     }
 
-    public static Sequence<String> lines(Reader reader) {
+    public Sequence<String> lines(Reader reader) {
         var bufferedReader = reader instanceof BufferedReader b ? b : new BufferedReader(reader);
         return () -> new Iterator<>() {
             String next = null;
@@ -401,11 +310,11 @@ public class Fusy {
         };
     }
 
-    public static Sequence<String> split(String splitted, String splitter) {
+    public Sequence<String> split(String splitted, String splitter) {
         return Sequence.ofEntire(List.of(splitted.split(splitter)));
     }
 
-    public static<T> T min(Iterable<T> it, BiFunction<T, T, Integer> comparator) {
+    public<T> T min(Iterable<T> it, BiFunction<T, T, Integer> comparator) {
         var c = new Cascade<>(it.iterator());
         if(!c.hasNext()) return null;
         var min = c.next();
@@ -417,15 +326,15 @@ public class Fusy {
         return min;
     }
 
-    public static boolean random(double chance) {
+    public boolean random(double chance) {
         return Math.random() < chance;
     }
 
-    public static Subject random(Subject s) {
+    public Subject random(Subject s) {
         return s.select((int)Math.floor(Math.random() * s.size()));
     }
 
-    public static Series random(Subject s, boolean repetitions) {
+    public Series random(Subject s, boolean repetitions) {
         if(repetitions) return Series.pull(() -> random(s));
         var options = Suite.alter(s);
         return Series.pull(() -> {
@@ -435,7 +344,7 @@ public class Fusy {
         });
     }
 
-    public static<T> Sequence<T> pull(Supplier<T> supplier) {
+    public<T> Sequence<T> pull(Supplier<T> supplier) {
         return Sequence.pull(supplier);
     }
 }
