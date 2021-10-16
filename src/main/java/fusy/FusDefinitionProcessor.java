@@ -10,7 +10,8 @@ public class FusDefinitionProcessor extends FusProcessor {
         DISCARD, BEFORE_TYPE, TYPE, HEADER, BODY, ENUM_HEADER, ENUM_PENDING, ENUM_OPTION,
         ENUM_OPTION_CSTR, ENUM_AFTER_CSTR, ENUM_BODY, BEAK, BACKBEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
-        RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED
+        RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
+        RECORD_HEADER, RECORD_COMPONENTS
     }
 
     enum Result {
@@ -90,6 +91,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                     }
                     case '.' -> result.append("final ");
                     case '!' -> throwing = true;
+                    case '/' -> typeComplete("void");
                     default -> {
                         if(Character.isWhitespace(i)) {
                             result.appendCodePoint(i);
@@ -135,6 +137,27 @@ public class FusDefinitionProcessor extends FusProcessor {
                     subProcessor = new FusyFunProcessor(this);
                     subProcessor.getReady();
                     $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                } else {
+                    result.appendCodePoint(i);
+                }
+            }
+            case RECORD_HEADER -> {
+                if(i == '\\') {
+                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                } else if(i == '\n') {
+                    $state.aimedAdd($state.raw(), State.BODY);
+                    result.append("{\n");
+                    subProcessor = new FusBodyProcessor(this);
+                    subProcessor.getReady();
+                } else if (i == '<') {
+                    $state.aimedAdd($state.raw(), State.BEAK);
+                } else if(i == '(') {
+                    result.append("(");
+                    $state.unset($state.raw());
+                    $state.aimedAdd($state.raw(), State.RECORD_COMPONENTS);
+                    var fusBodyProcessor = new FusBodyProcessor(this);
+                    fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                    subProcessor = fusBodyProcessor;
                 } else {
                     result.appendCodePoint(i);
                 }
@@ -299,7 +322,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case TYPE, BODY, INLINE_BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN, METHOD_ARGUMENTS,
-                    INTERFACE_BODY -> subProcessor.advance(i);
+                    INTERFACE_BODY, METHOD_BODY, RECORD_COMPONENTS -> subProcessor.advance(i);
             case BACKSLASH -> {
                 if(i == '\\') {
                     $state.unset($state.raw());
@@ -382,6 +405,13 @@ public class FusDefinitionProcessor extends FusProcessor {
                 parentProcessor.terminateSubProcess();
                 $state.aimedAdd($state.raw(), State.TERMINATED);
             }
+            case METHOD_BODY -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                result.append("{").append(stats).append("}");
+                parentProcessor.terminateSubProcess();
+                $state.aimedAdd($state.raw(), State.TERMINATED);
+            }
             case INLINE_BODY -> {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
@@ -408,13 +438,19 @@ public class FusDefinitionProcessor extends FusProcessor {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
                 result.append(stats).append(")");
-                if(throwing) result.append("throws Throwable{\n");
-                else result.append("{\n");
+                if(throwing) result.append("throws Throwable");
                 subProcessor = new FusBodyProcessor(this);
                 subProcessor.getReady();
                 $state.unset($state.raw());
-                $state.aimedAdd($state.raw(), State.BODY);
+                $state.aimedAdd($state.raw(), State.METHOD_BODY);
                 $state.aimedAdd($state.raw(), State.DISCARD);
+            }
+            case RECORD_COMPONENTS -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                result.append(stats);
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.HEADER);
             }
         }
     }
@@ -426,10 +462,6 @@ public class FusDefinitionProcessor extends FusProcessor {
                 result.append(complete).append(" ");
                 $state.unset($state.raw());
                 $state.aimedAdd($state.raw(), State.ENUM_HEADER);
-            }
-            case "new" -> {
-                $state.unset($state.raw());
-                $state.aimedAdd($state.raw(), State.HEADER);
             }
             case "import" -> {
                 result = new StringBuilder("import ").append(result.toString());
@@ -472,11 +504,22 @@ public class FusDefinitionProcessor extends FusProcessor {
                 $state.unset($state.raw());
                 $state.aimedAdd($state.raw(), State.HEADER);
             }
+            case "record" -> {
+                if(isPublic) result.append("public ");
+                result.append(complete).append(" ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.RECORD_HEADER);
+            }
             case "interface" -> {
                 if(isPublic) result.append("public ");
                 result.append(complete).append(" ");
                 $state.unset($state.raw());
                 $state.aimedAdd($state.raw(), State.INTERFACE_HEADER);
+            }
+            case "new" -> {
+                if(isPublic) result.append("public ");
+                $state.unset($state.raw());
+                $state.aimedAdd($state.raw(), State.RESOURCE_HEADER);
             }
             default -> {
                 if(isPublic) result.append("public ");

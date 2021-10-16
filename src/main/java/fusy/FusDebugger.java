@@ -103,21 +103,18 @@ public class FusDebugger extends FusProcessor {
         var setup = $program.in(FusBodyProcessor.Result.SETUP).asString("");
         var program = switch (setup) {
             case "graphic" -> """
-                    import java.nio.file.*;
-                    import java.io.File;
-                    import static fusy.Fusy.*;
                     import static fusy.FusyFun.*;
                     import fusy.FusyDrop;
                     import suite.suite.$uite;
                     import suite.suite.Suite;
-                    import suite.suite.action.*;
                     import suite.suite.Subject;
                     import suite.suite.util.Series;
                     import suite.suite.util.Sequence;
                     import java.util.Objects;
                     import java.util.Arrays;
+                    import java.math.BigDecimal;
                     import airbricks.Wall;
-                    import fusy.graphic.Graphic;
+                    import fusy.setup.Graphic;
                     """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                                     
                     @SuppressWarnings("unchecked")
@@ -138,23 +135,21 @@ public class FusDebugger extends FusProcessor {
                 }
                 """;
             case "console", "" -> """
-                import java.nio.file.*;
-                import java.io.File;
-                import fusy.Fusy;
+                import java.math.BigDecimal;
                 import static fusy.FusyFun.*;
                 import fusy.FusyDrop;
                 import suite.suite.$uite;
                 import suite.suite.Suite;
-                import suite.suite.action.*;
                 import suite.suite.Subject;
                 import suite.suite.util.Series;
                 import suite.suite.util.Sequence;
                 import java.util.Objects;
                 import java.util.Arrays;
+                import fusy.setup.Console;
                 """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                 
                 @SuppressWarnings("unchecked")
-                class fusy extends Fusy {
+                class fusy extends Console {
                     public static void main(String[] args) throws Exception {
                         new fusy(args);
                     }

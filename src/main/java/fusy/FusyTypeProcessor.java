@@ -88,14 +88,10 @@ public class FusyTypeProcessor extends FusProcessor {
             case BEFORE_GENERIC -> {
                 if(i == '\\') {
                     $state.aimedAdd($state.raw(), State.BACKSLASH);
-                } else if(i == '{') {
-                    subProcessor = new FusyFunProcessor(this);
-                    subProcessor.getReady();
-                    $state.aimedAdd($state.raw(), State.FUSY_FUN);
                 } else if(i == '>') {
                     result.append('>');
                     parentProcessor.terminateSubProcess();
-                } else if(Character.isJavaIdentifierStart(i)){
+                } else if(Character.isJavaIdentifierStart(i) || i == '{'){
                     $state.unset($state.raw());
                     $state.aimedAdd($state.raw(), State.GENERIC);
                     subProcessor = new FusyTypeProcessor(this);
@@ -150,7 +146,6 @@ public class FusyTypeProcessor extends FusProcessor {
                 } else if(i == '>') {
                     result.append("<>");
                     parentProcessor.terminateSubProcess();
-                    parentProcessor.advance(i);
                 } else if(Character.isWhitespace(i)) {
                     result.appendCodePoint(i);
                 } else {

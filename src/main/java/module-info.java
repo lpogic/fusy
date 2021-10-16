@@ -3,5 +3,5 @@ module fusy {
     requires airbricks;
     requires bricks;
     exports fusy;
-    exports fusy.graphic;
+    exports fusy.setup;
 }
