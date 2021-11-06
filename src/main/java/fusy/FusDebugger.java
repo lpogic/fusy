@@ -8,9 +8,6 @@ import static suite.suite.$uite.$;
 
 public class FusDebugger extends FusProcessor {
 
-    enum State {
-    }
-
     enum Result {
         COMPLETE
     }
@@ -68,7 +65,7 @@ public class FusDebugger extends FusProcessor {
     }
 
     @Override
-    public void advance(int i) {
+    public int advance(int i) {
         if(i == '\n') {
             line = new StringBuilder();
             ++lineCounter;
@@ -76,7 +73,7 @@ public class FusDebugger extends FusProcessor {
             line.appendCodePoint(i);
         }
         try {
-            advance(i, false);
+            return advance(i, false);
         } catch (DebuggerException de) {
             throw de;
         } catch (Exception e) {
@@ -84,12 +81,8 @@ public class FusDebugger extends FusProcessor {
         }
     }
 
-    public void advance(int i, boolean outputAppend) {
-        if(outputAppend) { 
-            advance(i);
-        } else {
-            processor.advance(i);
-        }
+    public int advance(int i, boolean outputAppend) {
+        return outputAppend ? advance(i) : processor.advance(i);
     }
 
     @Override

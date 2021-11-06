@@ -2,6 +2,8 @@ package fusy;
 
 import suite.suite.Subject;
 
+import java.util.Stack;
+
 import static suite.suite.$uite.$;
 
 public class ArrayProcessor extends FusProcessor {
@@ -14,6 +16,7 @@ public class ArrayProcessor extends FusProcessor {
         COMPLETE
     }
 
+    Stack<State> state;
     String componentType;
     Subject dimensions;
     FusProcessor parentProcessor;
@@ -27,7 +30,8 @@ public class ArrayProcessor extends FusProcessor {
     public void getReady() {
         componentType = "";
         dimensions = $();
-        $state = $($(State.DIMENSION));
+        state = new Stack<>();
+        state.push(State.DIMENSION);
     }
 
     @Override
@@ -36,45 +40,46 @@ public class ArrayProcessor extends FusProcessor {
     }
 
     @Override
-    public void advance(int i) {
-        switch ($state.in().as(State.class)) {
-            case DISCARD -> $state.unset($state.raw());
+    public int advance(int i) {
+        switch (state.peek()) {
+            case DISCARD -> state.pop();
             case DIMENSION -> {
                 if(i == '(') {
                     var bodyProcessor = new FusBodyProcessor(this);
                     bodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
                     subProcessor = bodyProcessor;
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.DIM_EXP);
+                    state.pop();
+                    state.push(State.DIM_EXP);
                 } else if(!Character.isWhitespace(i)){
                     var fusyTypeProcessor = new FusyTypeProcessor(this);
                     fusyTypeProcessor.getReady();
                     fusyTypeProcessor.arrayTypeEnabled(false);
                     subProcessor = fusyTypeProcessor;
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.FUSY_TYPE);
+                    state.pop();
+                    state.push(State.FUSY_TYPE);
                     advance(i);
                 }
             }
             case DIM_EXP, FUSY_TYPE -> subProcessor.advance(i);
             case TERMINATED -> parentProcessor.advance(i);
         }
+        return 0;
     }
 
 
     public void terminateSubProcess() {
-        if($state.in().raw() == State.FUSY_TYPE) {
+        if(state.peek() == State.FUSY_TYPE) {
             var $ = subProcessor.finish();
             componentType = $.in(FusyTypeProcessor.Result.COMPLETE).asString();
-            $state.aimedAdd($state.raw(), State.TERMINATED);
+            state.push(State.TERMINATED);
             parentProcessor.terminateSubProcess();
         }
-        if($state.in().raw() == State.DIM_EXP) {
+        if(state.peek() == State.DIM_EXP) {
             var $ = subProcessor.finish();
             dimensions.add($.in(FusBodyProcessor.Result.STATEMENTS).asString());
-            $state.unset($state.raw());
-            $state.aimedAdd($state.raw(), State.DIMENSION);
-            $state.aimedAdd($state.raw(), State.DISCARD);
+            state.pop();
+            state.push(State.DIMENSION);
+            state.push(State.DISCARD);
         }
     }
 

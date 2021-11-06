@@ -2,6 +2,8 @@ package fusy;
 
 import suite.suite.Subject;
 
+import java.util.Stack;
+
 import static suite.suite.$uite.$;
 
 public class FusyTypeProcessor extends FusProcessor {
@@ -16,6 +18,7 @@ public class FusyTypeProcessor extends FusProcessor {
         COMPLETE
     }
 
+    Stack<State> state;
     Subject $types;
     StringBuilder result;
     boolean arrayTypes;
@@ -30,7 +33,8 @@ public class FusyTypeProcessor extends FusProcessor {
     public void getReady() {
         result = new StringBuilder();
         arrayTypes = true;
-        $state = $($(State.BEFORE));
+        state = new Stack<>();
+        state.push(State.BEFORE);
         $types = $();
     }
 
@@ -44,32 +48,32 @@ public class FusyTypeProcessor extends FusProcessor {
     }
 
     @Override
-    public void advance(int i) {
-        switch ($state.in().as(State.class)) {
+    public int advance(int i) {
+        switch (state.peek()) {
             case BEFORE -> {
                 if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '{') {
                     subProcessor = new FusyFunProcessor(this);
                     subProcessor.getReady();
-                    $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                    state.push(State.FUSY_FUN);
                 } else if(Character.isJavaIdentifierStart(i)) {
                     result.appendCodePoint(i);
-                    $state.aimedAdd($state.raw(), State.ID);
+                    state.push(State.ID);
                 }
             }
             case FUSY_FUN, GENERIC -> subProcessor.advance(i);
             case ID -> {
                 if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '<') {
-                    $state.aimedAdd($state.raw(), State.BEAK);
+                    state.push(State.BEAK);
                 } else if(Character.isJavaIdentifierPart(i) || i == '.') {
                     result.appendCodePoint(i);
                 } else if(i == '{') {
                     if(arrayTypes) {
                         result.append("[");
-                        $state.aimedAdd($state.raw(), State.ARRAY);
+                        state.push(State.ARRAY);
                     } else {
                         parentProcessor.terminateSubProcess();
                         parentProcessor.advance(i);
@@ -83,17 +87,17 @@ public class FusyTypeProcessor extends FusProcessor {
                 if(i == '}') {
                     result.append("]");
                 }
-                $state.unset($state.raw());
+                state.pop();
             }
             case BEFORE_GENERIC -> {
                 if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '>') {
                     result.append('>');
                     parentProcessor.terminateSubProcess();
                 } else if(Character.isJavaIdentifierStart(i) || i == '{'){
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.GENERIC);
+                    state.pop();
+                    state.push(State.GENERIC);
                     subProcessor = new FusyTypeProcessor(this);
                     subProcessor.getReady();
                     advance(i);
@@ -101,19 +105,19 @@ public class FusyTypeProcessor extends FusProcessor {
             }
             case BEFORE_NEXT_GENERIC -> {
                 if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '{') {
                     result.append(',');
                     subProcessor = new FusyFunProcessor(this);
                     subProcessor.getReady();
-                    $state.aimedAdd($state.raw(), State.FUSY_FUN);
+                    state.push(State.FUSY_FUN);
                 } else if(i == '>') {
                     result.append('>');
                     parentProcessor.terminateSubProcess();
                 } else if(Character.isJavaIdentifierStart(i)){
                     result.append(',');
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.GENERIC);
+                    state.pop();
+                    state.push(State.GENERIC);
                     subProcessor = new FusyTypeProcessor(this);
                     subProcessor.getReady();
                     advance(i);
@@ -121,20 +125,20 @@ public class FusyTypeProcessor extends FusProcessor {
             }
             case AFTER_GENERIC -> {
                 if(i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '>') {
                     result.append('>');
                     parentProcessor.terminateSubProcess();
                 } else if(i == ',') {
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.BEFORE_NEXT_GENERIC);
+                    state.pop();
+                    state.push(State.BEFORE_NEXT_GENERIC);
                 } else {
                     result.appendCodePoint(i);
                 }
             }
             case BEAK -> {
                 if (i == '\\') {
-                    $state.aimedAdd($state.raw(), State.BACKSLASH);
+                    state.push(State.BACKSLASH);
                 } else if(i == '\n') {
                     parentProcessor.terminateSubProcess();
                     parentProcessor.advance('<');
@@ -150,78 +154,79 @@ public class FusyTypeProcessor extends FusProcessor {
                     result.appendCodePoint(i);
                 } else {
                     result.append("<");
-                    $state.unset($state.raw());
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.BEFORE_GENERIC);
+                    state.pop();
+                    state.pop();
+                    state.push(State.BEFORE_GENERIC);
                     advance(i);
                 }
             }
             case BACKSLASH -> {
                 if(i == '\\') {
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.DOUBLE_BACKSLASH);
+                    state.pop();
+                    state.push(State.DOUBLE_BACKSLASH);
                 } else if (i == '\n') {
-                    $state.unset($state.raw());
+                    state.pop();
                 } else if (Character.isWhitespace(i)) {
                     result.appendCodePoint(i);
                 } else {
-                    $state.unset($state.raw());
+                    state.pop();
                     advance('\n');
                     advance(i);
                 }
             }
             case DOUBLE_BACKSLASH -> {
                 if (i == '>') {
-                    $state.unset($state.raw());
-                    $state.aimedAdd($state.raw(), State.MULTI_LINE_COMMENT);
+                    state.pop();
+                    state.push(State.MULTI_LINE_COMMENT);
                 } else {
-                    $state.unset($state.raw());
+                    state.pop();
                     advance('\n');
-                    $state.aimedAdd($state.raw(), State.SINGLE_LINE_COMMENT);
+                    state.push(State.SINGLE_LINE_COMMENT);
                 }
             }
             case SINGLE_LINE_COMMENT -> {
                 if (i == '\n') {
-                    $state.unset($state.raw());
+                    state.pop();
                 }
             }
             case MULTI_LINE_COMMENT -> {
                 if (i == '<') {
-                    $state.aimedAdd($state.raw(), State.MLC_BACKSLASH);
+                    state.push(State.MLC_BACKSLASH);
                 }
             }
             case MLC_BACKSLASH -> {
-                $state.unset($state.raw());
+                state.pop();
                 if (i == '\\') {
-                    $state.aimedAdd($state.raw(), State.MLC_DOUBLE_BACKSLASH);
+                    state.push(State.MLC_DOUBLE_BACKSLASH);
                 }
             }
             case MLC_DOUBLE_BACKSLASH -> {
-                $state.unset($state.raw());
+                state.pop();
                 if (i == '\\') {
-                    $state.unset($state.raw());
+                    state.pop();
                 } else {
                     advance(i);
                 }
             }
             case TERMINATED -> parentProcessor.advance(i);
         }
+        return 0;
     }
 
 
     public void terminateSubProcess() {
-        if($state.in().raw() == State.FUSY_FUN) {
+        if(state.peek() == State.FUSY_FUN) {
             var $ = subProcessor.finish();
             String type = $.in(FusyFunProcessor.Result.COMPLETE).asString();
             result.append(type);
             parentProcessor.terminateSubProcess();
-            $state.aimedAdd($state.raw(), State.TERMINATED);
-        } else if($state.in().raw() == State.GENERIC) {
+            state.push(State.TERMINATED);
+        } else if(state.peek() == State.GENERIC) {
             var $ = subProcessor.finish();
             String type = $.in(Result.COMPLETE).asString();
             result.append(type);
-            $state.unset($state.raw());
-            $state.aimedAdd($state.raw(), State.AFTER_GENERIC);
+            state.pop();
+            state.push(State.AFTER_GENERIC);
         }
     }
 

@@ -2,6 +2,8 @@ package fusy;
 
 import suite.suite.Subject;
 
+import java.util.Stack;
+
 import static suite.suite.$uite.$;
 
 public class FusyFunProcessor extends FusProcessor {
@@ -14,6 +16,7 @@ public class FusyFunProcessor extends FusProcessor {
         COMPLETE
     }
 
+    Stack<State> state;
     Subject $argumentTypes;
     String returnType;
     StringBuilder result;
@@ -28,7 +31,8 @@ public class FusyFunProcessor extends FusProcessor {
     public void getReady() {
         result = new StringBuilder();
         returnType = "";
-        $state = $($(State.ARGUMENTS_TYPE));
+        state = new Stack<>();
+        state.push(State.ARGUMENTS_TYPE);
         $argumentTypes = $();
     }
 
@@ -38,39 +42,40 @@ public class FusyFunProcessor extends FusProcessor {
     }
 
     @Override
-    public void advance(int i) {
-        switch ($state.in().as(State.class)) {
+    public int advance(int i) {
+        switch (state.peek()) {
             case ARGUMENTS_TYPE -> {
                 if(i == '}') {
                     subProcessor = new FusyTypeProcessor(this);
                     subProcessor.getReady();
-                    $state.aimedAdd($state.raw(), State.RETURN_TYPE);
+                    state.push(State.RETURN_TYPE);
                 } else if(i == ',') {
                 } else {
                     subProcessor = new FusyTypeProcessor(this);
                     subProcessor.getReady();
-                    $state.aimedAdd($state.raw(), State.TYPE);
+                    state.push(State.TYPE);
                     advance(i);
                 }
             }
             case TYPE, RETURN_TYPE -> subProcessor.advance(i);
             case TERMINATED -> parentProcessor.advance(i);
         }
+        return 0;
     }
 
 
     public void terminateSubProcess() {
-        if($state.in().raw() == State.TYPE) {
+        if(state.peek() == State.TYPE) {
             var $ = subProcessor.finish();
             String type = $.in(FusyTypeProcessor.Result.COMPLETE).asString();
             $argumentTypes.add(type);
-            $state.unset($state.raw());
+            state.pop();
         }
-        if($state.in().raw() == State.RETURN_TYPE) {
+        if(state.peek() == State.RETURN_TYPE) {
             var $ = subProcessor.finish();
             returnType = $.in(FusyTypeProcessor.Result.COMPLETE).asString();
             parentProcessor.terminateSubProcess();
-            $state.aimedAdd($state.raw(), State.TERMINATED);
+            state.push(State.TERMINATED);
         }
     }
 
