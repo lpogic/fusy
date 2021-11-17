@@ -1,5 +1,5 @@
 # Fusy
-Język programowania Fusy. Skryptowy, statycznie typowany, zbudowany na bazie Javy ( kompilowany do pliku .java ). Stworzony dla zabawy. Użycie na własne ryzyko :)
+Język programowania Fusy. Skryptowy, statycznie typowany, pasożyt Javy ( kompilowany do pliku .java ). Stworzony dla zabawy. Użycie na własne ryzyko :)
 # Przykład
 (rozwiązanie zadania <a href="http://rosettacode.org/wiki/Dijkstra%27s_algorithm">http://rosettacode.org/wiki/Dijkstra%27s_algorithm</a>)
 ```
