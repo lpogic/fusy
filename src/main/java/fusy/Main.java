@@ -19,7 +19,7 @@ public class Main {
     static boolean isWindows = System.getProperty("os.name").startsWith("Windows");
 
     public static void main(String[] args) {
-//        javaHome = "."; args = new String[]{"skrypt.txt"};
+//        javaHome = "C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\jre"; args = new String[]{"C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {
@@ -89,11 +89,11 @@ public class Main {
 
     static void run(File fus, String[] args) throws IOException, InterruptedException {
         var debugger = new FusDebugger();
-        var program = debugger.process(fus.getPath()).in(FusDebugger.Result.COMPLETE).asString();
+        var program = debugger.process(fus.getPath());
         var sep = isWindows ? "\\" : "/";
         var output = new FileOutputStream(javaHome + sep + "fusy.java");
         var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
-        writer.write(program);
+        writer.write(program.in(FusDebugger.Result.CODE).asString());
         writer.flush();
         output.close();
         var pb = new ProcessBuilder();
@@ -101,7 +101,11 @@ public class Main {
         if(isWindows) {
             cmd.add("cmd");
             cmd.add("/c");
-            cmd.add(javaHome + sep + "bin" + sep + "java.exe");
+            if("graphic".equals(program.in(FusDebugger.Result.SETUP).asString()) && System.console() == null) {
+                cmd.add(javaHome + sep + "bin" + sep + "javaw.exe");
+            } else {
+                cmd.add(javaHome + sep + "bin" + sep + "java.exe");
+            }
         } else {
             cmd.add(javaHome + sep + "bin" + sep + "java");
         }

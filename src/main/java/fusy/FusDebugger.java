@@ -9,7 +9,7 @@ import static suite.suite.$uite.$;
 public class FusDebugger extends FusProcessor {
 
     enum Result {
-        COMPLETE
+        CODE, SETUP
     }
 
     StringBuilder line;
@@ -155,6 +155,7 @@ public class FusDebugger extends FusProcessor {
                 """;
             default -> throw new DebuggerException("Unsupported setup " + setup);
         };
-        return $(Result.COMPLETE, $(program));
+        return $(Result.CODE, $(program),
+                Result.SETUP, $(setup));
     }
 }

@@ -1159,7 +1159,7 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                 }
                 case DOUBLE_BACKSLASH -> {
-                    if (i == '>') {
+                    if (i == '\\') {
                         state.pop();
                         state.push(State.MULTI_LINE_COMMENT);
                     } else {
@@ -1174,7 +1174,7 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                 }
                 case MULTI_LINE_COMMENT -> {
-                    if (i == '<') {
+                    if (i == '\\') {
                         state.push(State.MLC_BACKSLASH);
                     }
                 }
