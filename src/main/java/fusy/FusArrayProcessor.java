@@ -6,7 +6,7 @@ import java.util.Stack;
 
 import static suite.suite.$uite.$;
 
-public class ArrayProcessor extends FusProcessor {
+public class FusArrayProcessor extends FusProcessor {
 
     enum State {
         DIM_EXP, FUSY_TYPE, DIMENSION, TERMINATED, DISCARD
@@ -22,7 +22,7 @@ public class ArrayProcessor extends FusProcessor {
     FusProcessor parentProcessor;
     FusProcessor subProcessor;
 
-    public ArrayProcessor(FusProcessor parentProcessor) {
+    public FusArrayProcessor(FusProcessor parentProcessor) {
         this.parentProcessor = parentProcessor;
     }
 
@@ -37,6 +37,12 @@ public class ArrayProcessor extends FusProcessor {
     @Override
     public FusDebugger getDebugger() {
         return parentProcessor.getDebugger();
+    }
+
+
+    @Override
+    public String getCatchVar(String symbol) {
+        return parentProcessor.getCatchVar(symbol);
     }
 
     @Override

@@ -16,6 +16,7 @@ public class FusDebugger extends FusProcessor {
     int lineCounter;
     FusBodyProcessor processor;
     Subject sources;
+    int autoVar;
 
     @Override
     public void getReady() {
@@ -24,6 +25,7 @@ public class FusDebugger extends FusProcessor {
         line = new StringBuilder();
         lineCounter = 1;
         sources = $();
+        autoVar = 1;
     }
 
     public void pushSource(String source) {
@@ -39,9 +41,18 @@ public class FusDebugger extends FusProcessor {
         }
     }
 
+    public String getAutoVar() {
+        return "$" + autoVar++;
+    }
+
     @Override
     public FusDebugger getDebugger() {
         return this;
+    }
+
+    @Override
+    public String getCatchVar(String symbol) {
+        return symbol;
     }
 
     @Override

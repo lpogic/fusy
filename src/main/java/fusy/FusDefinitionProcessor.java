@@ -17,7 +17,7 @@ public class FusDefinitionProcessor extends FusProcessor {
     }
 
     enum Result {
-        STATEMENTS, IMPORTS, SETUP
+        STATEMENTS, IMPORTS, SETUP, CATCH_VARS
     }
 
     Stack<State> state;
@@ -29,7 +29,9 @@ public class FusDefinitionProcessor extends FusProcessor {
     boolean isAbstract;
     boolean isPublic;
     boolean throwing;
+    boolean isInner;
     Subject imports;
+    Subject catchVars;
 
     public FusDefinitionProcessor(FusBodyProcessor parentProcessor) {
         this.parentProcessor = parentProcessor;
@@ -41,8 +43,10 @@ public class FusDefinitionProcessor extends FusProcessor {
         isSetup = false;
         isAbstract = false;
         isPublic = true;
+        isInner = false;
         throwing = false;
         imports = $();
+        catchVars = $();
         result = new StringBuilder();
         state = new Stack<>();
         state.push(State.BEFORE_TYPE);
@@ -53,8 +57,10 @@ public class FusDefinitionProcessor extends FusProcessor {
         isSetup = false;
         isAbstract = false;
         isPublic = true;
+        isInner = false;
         throwing = false;
         imports = $();
+        catchVars = $();
         result = new StringBuilder();
         state = new Stack<>();
         state.push(State.TYPE);
@@ -67,6 +73,18 @@ public class FusDefinitionProcessor extends FusProcessor {
     }
 
     @Override
+    public String getCatchVar(String symbol) {
+        if(!isInner)return parentProcessor.getCatchVar(symbol);
+        var cv = catchVars.in(symbol).set();
+        if(cv.absent()) {
+            var catchVar = getDebugger().getAutoVar();
+            cv.set(catchVar);
+            return catchVar;
+        }
+        return cv.asExpected();
+    }
+
+    @Override
     public int advance(int i) {
         switch (state.peek()) {
             case DISCARD -> state.pop();
@@ -75,6 +93,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 switch (i) {
                     case '\\' -> state.push(State.BACKSLASH);
                     case '>' -> {
+                        isInner = true;
                         state.push(State.BODY);
                         result.append("{");
                         subProcessor = new FusBodyProcessor(this);
@@ -478,7 +497,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 fusBodyProcessor.getReady(FusBodyProcessor.State.STATEMENT);
                 subProcessor = fusBodyProcessor;
             }
-            case "setup" -> {
+            case "extends" -> {
                 isSetup =  true;
                 state.pop();
                 state.push(State.INLINE_BODY);
@@ -545,7 +564,8 @@ public class FusDefinitionProcessor extends FusProcessor {
         } else {
             return $(
                     Result.STATEMENTS, $(result.toString()),
-                    Result.IMPORTS, imports
+                    Result.IMPORTS, imports,
+                    Result.CATCH_VARS, catchVars
             );
         }
     }

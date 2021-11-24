@@ -42,6 +42,11 @@ public class FusyFunProcessor extends FusProcessor {
     }
 
     @Override
+    public String getCatchVar(String symbol) {
+        return parentProcessor.getCatchVar(symbol);
+    }
+
+    @Override
     public int advance(int i) {
         switch (state.peek()) {
             case ARGUMENTS_TYPE -> {
