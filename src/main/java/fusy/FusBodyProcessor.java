@@ -14,18 +14,18 @@ public class FusBodyProcessor extends FusProcessor {
         ARRAY_INDEX, ARRAY_INIT, ARRAY_INIT_BETWEEN, ARRAY_END, COLON, DOUBLE_COLON, COLON_METHOD, FOR_SCOPE_EXP, FSE_ID, EXP_END, FSE_AFTER_ID,
         SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT, ELF_SCOPE, EMPTY_INLINE_STATEMENT, INLINE_STATEMENT,
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
-        ES_AT, AT, AT_TYPE, AT_CAST, LAMBDA, LAMBDA_EXP, BEAK, BACKBEAK, FUSY_FUN, FUSY_TYPE, HASH, DOLLAR_STRING,
+        ES_AT, AT, AT_TYPE, AT_CAST, LAMBDA, LAMBDA_EXP, BEAK, FUSY_FUN, FUSY_TYPE, HASH, DOT_STRING,
         ES_PLUS, ES_MINUS, EXCLAMATION, CATCH, CSE_ID, AFTER_BTI, HASH_ID, STATEMENT_VARIABLE,
-        TRY_ID, TRY_SCOPE_EXP, DOLLAR, DOLLAR_BRACE_STRING, DBS_END, TYPED_VAR, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP,
+        TRY_ID, TRY_SCOPE_EXP, AID_DOT, DOT_BRACE_STRING, DBS_END, TYPED_VAR, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP,
         ASSIGN_EXP, DOT, NEW, NEW_ARRAY, AFTER_NEW_ARRAY, NEW_AFTER_TYPE, AT_QUESTION, AFTER_ATQ, AFTER_ATQ_ID, INSTANCEOF,
-        CATCH_VAR_ID
+        CATCH_VAR_ID, AFTER_TRY, AFTER_IF, AFTER_CASE, AFTER_SWITCH, BT_AFTER_ID, BT_AT, BT_AT_TYPE, BT_AT_CAST
     }
 
     enum Result {
         STATEMENTS, DEFINITIONS, IMPORTS, SETUP
     }
 
-    final int DOLLAR_SUBSTITUTE = 0x20AC;
+    public static final int MANUAL_LF = 0xFF0001;
 
     Stack<State> state;
     StringBuilder result;
@@ -158,20 +158,19 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                         case '@' -> state.push(State.AT);
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
                             result.append("$uite.$(");
                         }
                         case '!' -> state.push(State.EXCLAMATION);
-                        case '\n' -> {
+                        case '\n', MANUAL_LF -> {
                             result.append(";\n");
                             state.pop();
                         }
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -196,11 +195,13 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.INLINE_STATEMENT);
                         }
-                        case ';' -> result.appendCodePoint(i);
+                        case MANUAL_LF -> result.append(";");
                         default -> {
-                            state.pop();
-                            state.push(State.INLINE_STATEMENT);
-                            return advance(i);
+                            if(!Character.isWhitespace(i) || i == '\n') {
+                                state.pop();
+                                state.push(State.INLINE_STATEMENT);
+                                return advance(i);
+                            }
                         }
                     }
                 }
@@ -225,13 +226,13 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             return advance(i);
                         }
-                        case ';' -> {
+                        case MANUAL_LF -> {
                             state.pop();
                             state.push(State.EMPTY_INLINE_STATEMENT);
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -241,7 +242,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -266,7 +266,7 @@ public class FusBodyProcessor extends FusProcessor {
                 case BEAK -> {
                     switch (i) {
                         case '\\' -> state.push(State.BACKSLASH);
-                        case '\n', ';' -> {
+                        case '\n', MANUAL_LF -> {
                             state.pop();
                             var debugger = getDebugger();
                             debugger.advance('\n', false);
@@ -362,12 +362,12 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.AT_CAST);
                         }
-                        case '$' -> {
+                        case '@' -> {
                             state.pop();
                             state.push(State.AFTER_ID);
                             state.push(State.EXP_END);
                             state.push(State.EXP_END);
-                            state.push(State.DOLLAR);
+                            state.push(State.AT);
                             result.append("((").append(token.toString()).append(")(");
                         }
                         default -> {
@@ -442,14 +442,6 @@ public class FusBodyProcessor extends FusProcessor {
                 case HASH -> {
                     switch (i) {
                         case '\\' -> state.push(State.BACKSLASH);
-                        case '(' -> {
-                            result.append("new Suite.Mask(");
-                            state.pop();
-                            state.push(State.AFTER_ID);
-                            state.push(State.DISCARD);
-                            state.push(State.EXP_END);
-                            state.push(State.EXPRESSION);
-                        }
                         case ':' -> {
                             result.append("Suite.");
                             state.pop();
@@ -509,31 +501,31 @@ public class FusBodyProcessor extends FusProcessor {
                     state.pop();
                     return advance(i);
                 }
-                case DOLLAR -> {
+                case DOT -> {
                     switch (i) {
                         case '{' -> {
                             result.append("\"");
                             state.pop();
                             state.push(State.DBS_END);
-                            state.push(State.DOLLAR_BRACE_STRING);
-                        }
-                        case '$' -> {
-                            state.pop();
-                            return advance(DOLLAR_SUBSTITUTE);
+                            state.push(State.DOT_BRACE_STRING);
                         }
                         default -> {
-                            if (Character.isJavaIdentifierPart(i)) {
+                            if (Character.isJavaIdentifierStart(i)) {
                                 token = new StringBuilder();
                                 state.pop();
-                                state.push(State.DOLLAR_STRING);
+                                state.push(State.DOT_STRING);
+                                return advance(i);
+                            } else {
+                                result.append(".");
+                                state.pop();
                                 return advance(i);
                             }
                         }
                     }
                 }
-                case DOLLAR_BRACE_STRING -> {
+                case DOT_BRACE_STRING -> {
                     switch (i) {
-                        case '{' -> state.push(State.DOLLAR_BRACE_STRING);
+                        case '{' -> state.push(State.DOT_BRACE_STRING);
                         case '}' -> state.pop();
                         case '\\' -> result.append("\\\\");
                         default -> result.appendCodePoint(i);
@@ -552,10 +544,6 @@ public class FusBodyProcessor extends FusProcessor {
                     subProcessor.getReady();
                     subProcessor.advance('>');
                     return advance(i);
-//                    state.pop();
-//                    state.push(State.SCOPE_END);
-//                    state.push(State.EMPTY_STATEMENT);
-//                    return advance(i);
                 }
                 case EXPRESSION -> {
                     switch (i) {
@@ -578,7 +566,7 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                         case '@' -> state.push(State.AT);
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -587,7 +575,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -626,7 +613,7 @@ public class FusBodyProcessor extends FusProcessor {
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -636,7 +623,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -670,12 +656,12 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.EXPRESSION);
                             result.appendCodePoint(i);
                         }
-                        case ')', ',', '\n', ']', ';' -> {
+                        case ')', ',', '\n', ']', MANUAL_LF -> {
                             state.pop();
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -685,7 +671,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -724,7 +709,7 @@ public class FusBodyProcessor extends FusProcessor {
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -734,7 +719,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -773,7 +757,7 @@ public class FusBodyProcessor extends FusProcessor {
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -783,7 +767,6 @@ public class FusBodyProcessor extends FusProcessor {
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -806,12 +789,8 @@ public class FusBodyProcessor extends FusProcessor {
                     return advance(i);
                 }
                 case ID -> {
-                    if (Character.isJavaIdentifierPart(i) && i != '$') {
-                        if(i == DOLLAR_SUBSTITUTE) {
-                            token.append('$');
-                        } else {
-                            token.appendCodePoint(i);
-                        }
+                    if (Character.isJavaIdentifierPart(i)) {
+                        token.appendCodePoint(i);
                     } else {
                         var str = token.toString().toLowerCase();
                         switch (str) {
@@ -820,7 +799,23 @@ public class FusBodyProcessor extends FusProcessor {
                                 result.append(token);
                                 return advance(i);
                             }
-                            case "if", "switch", "while" -> {
+                            case "if" -> {
+                                state.pop();
+                                state.pop();
+                                state.push(State.AFTER_IF);
+                                state.push(State.SCOPE_EXP);
+                                result.append(token);
+                                return advance(i);
+                            }
+                            case "switch" -> {
+                                state.pop();
+                                state.pop();
+                                state.push(State.AFTER_SWITCH);
+                                state.push(State.SCOPE_EXP);
+                                result.append(token);
+                                return advance(i);
+                            }
+                            case "while" -> {
                                 state.pop();
                                 state.pop();
                                 state.push(State.SCOPE_EXP);
@@ -846,7 +841,23 @@ public class FusBodyProcessor extends FusProcessor {
                                 result.append("synchronized");
                                 return advance(i);
                             }
-                            case "do", "else", "finally" -> {
+                            case "else" -> {
+                                state.pop();
+                                state.pop();
+                                var ifIndex = state.lastIndexOf(State.AFTER_IF);
+                                if(ifIndex >= 0) {
+                                    while (state.size() > ifIndex) {
+                                        if (state.peek() != State.STAT_END) {
+                                            advance('<');
+                                        }
+                                        advance('\n');
+                                    }
+                                }
+                                state.push(State.SCOPE);
+                                result.append(token).append("{");
+                                return advance(i);
+                            }
+                            case "do", "finally" -> {
                                 state.pop();
                                 state.pop();
                                 state.push(State.SCOPE);
@@ -872,7 +883,7 @@ public class FusBodyProcessor extends FusProcessor {
                                 state.pop();
                                 state.push(State.AFTER_ID);
                                 state.push(State.NEW);
-				return advance(i);
+                                return advance(i);
                             }
                             case "extends" -> {
                                 result.append("new ");
@@ -886,6 +897,16 @@ public class FusBodyProcessor extends FusProcessor {
                             case "case" -> {
                                 state.pop();
                                 state.pop();
+                                var caseIndex = state.lastIndexOf(State.AFTER_CASE);
+                                var switchIndex = state.lastIndexOf(State.AFTER_SWITCH);
+                                if(caseIndex >= 0 && caseIndex > switchIndex) {
+                                    while (state.size() > caseIndex) {
+                                        if (state.peek() != State.STAT_END) {
+                                            advance('<');
+                                        }
+                                        advance('\n');
+                                    }
+                                }
                                 state.push(State.CASE_SCOPE);
                                 result.append(token);
                                 return advance(i);
@@ -893,6 +914,16 @@ public class FusBodyProcessor extends FusProcessor {
                             case "rest" -> {
                                 state.pop();
                                 state.pop();
+                                var caseIndex = state.lastIndexOf(State.AFTER_CASE);
+                                var switchIndex = state.lastIndexOf(State.AFTER_SWITCH);
+                                if(caseIndex >= 0 && caseIndex > switchIndex) {
+                                    while (state.size() > caseIndex) {
+                                        if (state.peek() != State.STAT_END) {
+                                            advance('<');
+                                        }
+                                        advance('\n');
+                                    }
+                                }
                                 state.push(State.SCOPE);
                                 result.append("default->{");
                                 return advance(i);
@@ -900,6 +931,15 @@ public class FusBodyProcessor extends FusProcessor {
                             case "elf" -> {
                                 state.pop();
                                 state.pop();
+                                var ifIndex = state.lastIndexOf(State.AFTER_IF);
+                                if(ifIndex >= 0) {
+                                    while (state.size() > ifIndex) {
+                                        if (state.peek() != State.STAT_END) {
+                                            advance('<');
+                                        }
+                                        advance('\n');
+                                    }
+                                }
                                 state.push(State.ELF_SCOPE);
                                 return advance(i);
                             }
@@ -939,7 +979,7 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.BT);
                         }
                         case ':' -> state.push(State.COLON);
-                        case '.' -> state.push(State.DOT);
+                        case '.' -> state.push(State.AID_DOT);
                         default -> {
                             if (Character.isWhitespace(i) && i != '\n') {
                                 result.appendCodePoint(i);
@@ -1025,13 +1065,11 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.EXP_END);
                             state.push(State.EXPRESSION);
                         }
-                        case '$' -> {
-                            result.append(".in(");
-                            token = new StringBuilder();
+                        case '[' -> {
+                            result.append(".apply($uite.$(");
                             state.pop();
-                            state.push(State.AFTER_BTI);
                             state.push(State.EXP_END);
-                            state.push(State.DOLLAR_STRING);
+                            state.push(State.BT);
                         }
                         default -> {
                             if (Character.isJavaIdentifierPart(i)) {
@@ -1070,6 +1108,11 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.DISCARD);
                             state.push(State.EXP_END);
                             state.push(State.EXPRESSION);
+                        } else if(i == '[') {
+                            result.append("($uite.$(");
+                            state.pop();
+                            state.push(State.EXP_END);
+                            state.push(State.BT);
                         } else {
                             result.append("()");
                             state.pop();
@@ -1077,15 +1120,19 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                     }
                 }
-                case DOT -> {
+                case AFTER_IF, AFTER_CASE, AFTER_SWITCH, AFTER_TRY -> {
+                        state.pop();
+                        if(i != '\n' && i != MANUAL_LF) return advance(i);
+                }
+                case AID_DOT -> {
                     switch (i) {
-                        case '$' -> {
+                        case '.' -> {
                             result.append(".in(");
                             token = new StringBuilder();
                             state.pop();
                             state.push(State.AFTER_BTI);
                             state.push(State.EXP_END);
-                            state.push(State.DOLLAR_STRING);
+                            state.push(State.DOT_STRING);
                         }
                         default -> {
                             result.append(".");
@@ -1184,7 +1231,7 @@ public class FusBodyProcessor extends FusProcessor {
                                 result.appendCodePoint(i);
                             } else {
                                 state.pop();
-                                advance(';');
+                                advance(MANUAL_LF);
                                 return advance(i);
                             }
                         }
@@ -1233,6 +1280,12 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.AFTER_BT);
                             state.push(State.BT);
                         }
+                        case '(' -> {
+                            result.append("new SuiteMask");
+                            state.pop();
+                            state.push(State.BT_NEXT);
+                            return advance(i);
+                        }
                         case '#' -> {
                             state.pop();
                             state.push(State.AFTER_BT);
@@ -1258,7 +1311,7 @@ public class FusBodyProcessor extends FusProcessor {
                 case BT_NEXT -> {
                     switch (i) {
                         case '"' -> {
-                            state.push(State.AFTER_ID);
+                            state.push(State.BT_AFTER_ID);
                             state.push(State.STRING);
                             result.appendCodePoint(i);
                         }
@@ -1267,10 +1320,10 @@ public class FusBodyProcessor extends FusProcessor {
                             result.appendCodePoint(i);
                         }
                         case '(' -> {
+                            result.append("(");
                             state.push(State.DISCARD);
                             state.push(State.EXP_END);
                             state.push(State.EXPRESSION);
-                            result.appendCodePoint(i);
                         }
                         case ']' -> {
                             state.pop();
@@ -1289,11 +1342,10 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.AFTER_BT);
                             state.push(State.BT_HASH);
                         }
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         case '{' -> {
                             subProcessor = new FusyFunProcessor(this);
                             subProcessor.getReady();
@@ -1321,6 +1373,12 @@ public class FusBodyProcessor extends FusProcessor {
                 case AFTER_BT -> {
                     switch (i) {
                         case ']', '[', '#' -> {
+                            state.pop();
+                            state.push(State.BT_NEXT);
+                            return advance(i);
+                        }
+                        case '(' -> {
+                            result.append(",new SuiteMask");
                             state.pop();
                             state.push(State.BT_NEXT);
                             return advance(i);
@@ -1354,14 +1412,14 @@ public class FusBodyProcessor extends FusProcessor {
                             case "new" -> {
                                 result.append("new ");
                                 state.pop();
-                                state.push(State.AFTER_ID);
+                                state.push(State.BT_AFTER_ID);
                                 state.push(State.NEW);
-				return advance(i);
+                                return advance(i);
                             }
                             case "extends" -> {
                                 result.append("new ");
                                 state.pop();
-                                state.push(State.AFTER_ID);
+                                state.push(State.BT_AFTER_ID);
                                 state.push(State.EXTENDS_AFTER_TYPE);
                                 state.push(State.FUSY_TYPE);
                                 subProcessor = new FusyTypeProcessor(this);
@@ -1369,8 +1427,34 @@ public class FusBodyProcessor extends FusProcessor {
                             }
                             default -> {
                                 state.pop();
-                                state.push(State.AFTER_ID);
+                                state.push(State.BT_AFTER_ID);
                                 result.append(token);
+                                return advance(i);
+                            }
+                        }
+                    }
+                }
+                case BT_AFTER_ID -> {
+                    switch (i) {
+                        case '\\' -> state.push(State.BACKSLASH);
+                        case '{' -> {
+                            result.append("[");
+                            state.push(State.ARRAY_END);
+                            state.push(State.ARRAY_INDEX);
+                        }
+                        case '(' -> {
+                            result.appendCodePoint(i);
+                            state.push(State.DISCARD);
+                            state.push(State.EXP_END);
+                            state.push(State.EXPRESSION);
+                        }
+                        case ':' -> state.push(State.COLON);
+                        case '.' -> state.push(State.AID_DOT);
+                        default -> {
+                            if (Character.isWhitespace(i) && i != '\n') {
+                                result.appendCodePoint(i);
+                            } else {
+                                state.pop();
                                 return advance(i);
                             }
                         }
@@ -1399,7 +1483,90 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                     }
                 }
-                case DOLLAR_STRING -> {
+                case BT_AT -> {
+                    switch (i) {
+                        case '\\' -> state.push(State.BACKSLASH);
+                        case '(' -> {
+                            state.pop();
+                            state.push(State.LAMBDA);
+                            state.push(State.DISCARD);
+                            state.push(State.EXP_END);
+                            state.push(State.EXPRESSION);
+                            result.append("(");
+                        }
+                        case '?' -> {
+                            subProcessor = new FusyTypeProcessor(this);
+                            subProcessor.getReady();
+                            state.pop();
+                            state.push(State.AT_QUESTION);
+                            state.push(State.FUSY_TYPE);
+                        }
+                        default -> {
+                            if(i == '{' || Character.isJavaIdentifierStart(i)) {
+                                subProcessor = new FusyTypeProcessor(this);
+                                subProcessor.getReady();
+                                state.pop();
+                                state.push(State.BT_AT_TYPE);
+                                state.push(State.FUSY_TYPE);
+                                return advance(i);
+                            } else if(i == '\n' || !Character.isWhitespace(i)) {
+                                result.append("fusy.this");
+                                state.pop();
+                                state.push(State.BT_AFTER_ID);
+                                return advance(i);
+                            }
+                        }
+                    }
+                }
+                case BT_AT_TYPE -> {
+                    switch (i) {
+                        case '\\' -> state.push(State.BACKSLASH);
+                        case '(' -> {
+                            result.append("((").append(token.toString()).append(")(");
+                            state.pop();
+                            state.push(State.BT_AT_CAST);
+                        }
+                        case '@' -> {
+                            state.pop();
+                            state.push(State.BT_AFTER_ID);
+                            state.push(State.EXP_END);
+                            state.push(State.EXP_END);
+                            state.push(State.AT);
+                            result.append("((").append(token.toString()).append(")(");
+                        }
+                        default -> {
+                            if (Character.isJavaIdentifierStart(i)) {
+                                var fusDefinitionProcessor = new FusDefinitionProcessor(this);
+                                fusDefinitionProcessor.getReady(token.toString());
+                                subProcessor = fusDefinitionProcessor;
+                                state.pop();
+                                state.push(State.DEFINITION);
+                                return advance(i);
+                            } else if (!Character.isWhitespace(i)) {
+                                result.append(token.toString()).append(".class");
+                                state.pop();
+                                state.push(State.BT_AFTER_ID);
+                                return advance(i);
+                            }
+                        }
+                    }
+                }
+                case BT_AT_CAST -> {
+                    if (i == ')') {
+                        result.append("null))");
+                        state.pop();
+                        state.push(State.BT_AFTER_ID);
+                    } else if (!Character.isWhitespace(i)) {
+                        state.pop();
+                        state.push(State.BT_AFTER_ID);
+                        state.push(State.EXP_END);
+                        state.push(State.DISCARD);
+                        state.push(State.EXP_END);
+                        state.push(State.EXPRESSION);
+                        return advance(i);
+                    }
+                }
+                case DOT_STRING -> {
                     if (Character.isJavaIdentifierPart(i)) {
                         token.appendCodePoint(i);
                     } else {
@@ -1426,7 +1593,7 @@ public class FusBodyProcessor extends FusProcessor {
                         case '\\' -> state.push(State.BACKSLASH);
                         case '@' -> state.push(State.AT);
                         case '#' -> state.push(State.HASH);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '[' -> {
                             state.push(State.AFTER_ID);
                             state.push(State.BT);
@@ -1492,11 +1659,10 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.ARRAY_INIT);
                         }
                         case '@' -> state.push(State.AT);
-                        case '$' -> state.push(State.DOLLAR);
+                        case '.' -> state.push(State.DOT);
                         case '!' -> state.push(State.EXCLAMATION);
                         case '\\' -> state.push(State.BACKSLASH);
                         case '<' -> state.push(State.BEAK);
-                        case '>' -> state.push(State.BACKBEAK);
                         default -> {
                             if (Character.isJavaIdentifierPart(i)) {
                                 state.push(State.BT_ID);
@@ -1563,7 +1729,7 @@ public class FusBodyProcessor extends FusProcessor {
                 case SCOPE -> {
                     switch (i) {
                         case '\\' -> state.push(State.BACKSLASH);
-                        case '\n', ';' -> {
+                        case '\n', MANUAL_LF -> {
                             state.pop();
                             state.push(State.SCOPE_END);
                             state.push(State.EMPTY_STATEMENT);
@@ -1639,15 +1805,17 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.TRY_ID);
                         }
-                        case '\n', ';', ',' -> {
+                        case '\n', MANUAL_LF, ',' -> {
                             result.append("{");
                             state.pop();
+                            state.push(State.AFTER_TRY);
                             state.push(State.SCOPE);
                             return advance(i);
                         }
                         default -> {
                             if (!Character.isWhitespace(i)) {
                                 state.pop();
+                                state.push(State.AFTER_TRY);
                                 state.push(State.NAKED_SCOPE_EXP_STAT);
                                 state.push(State.LAMBDA_EXP);
                                 result.append("(");
@@ -1662,6 +1830,7 @@ public class FusBodyProcessor extends FusProcessor {
                     } else {
                         result.append(token).append("=");
                         state.pop();
+                        state.push(State.AFTER_TRY);
                         state.push(State.NAKED_SCOPE_EXP_STAT);
                         state.push(State.LAMBDA_EXP);
                         return advance(i);
@@ -1671,16 +1840,34 @@ public class FusBodyProcessor extends FusProcessor {
                     switch (i) {
                         case '\\' -> state.push(State.BACKSLASH);
                         case '#' -> {
+                            state.pop();
+                            state.pop();
+                            var tryIndex = state.lastIndexOf(State.AFTER_TRY);
+                            if(tryIndex >= 0) {
+                                while (state.size() > tryIndex) {
+                                    if (state.peek() != State.STAT_END) {
+                                        advance('<');
+                                    }
+                                    advance('\n');
+                                }
+                            }
                             result.append("catch(Throwable ");
                             token = new StringBuilder();
-                            state.pop();
-                            state.pop();
                             state.push(State.CSE_ID);
                         }
-                        case '\n', ';', ',' -> {
-                            result.append("catch(Throwable ignored){");
+                        case '\n', MANUAL_LF, ',' -> {
                             state.pop();
                             state.pop();
+                            var tryIndex = state.lastIndexOf(State.AFTER_TRY);
+                            if(tryIndex >= 0) {
+                                while (state.size() > tryIndex) {
+                                    if (state.peek() != State.STAT_END) {
+                                        advance('<');
+                                    }
+                                    advance('\n');
+                                }
+                            }
+                            result.append("catch(Throwable $ignored){");
                             state.push(State.SCOPE);
                             return advance(i);
                         }
@@ -1691,9 +1878,18 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                         default -> {
                             if (!Character.isWhitespace(i)) {
+                                state.pop();
+                                state.pop();
+                                var tryIndex = state.lastIndexOf(State.AFTER_TRY);
+                                if(tryIndex >= 0) {
+                                    while (state.size() > tryIndex) {
+                                        if (state.peek() != State.STAT_END) {
+                                            advance('<');
+                                        }
+                                        advance('\n');
+                                    }
+                                }
                                 result.append("catch(");
-                                state.pop();
-                                state.pop();
                                 state.push(State.NAKED_SCOPE_EXP_STAT);
                                 state.push(State.LAMBDA_EXP);
                                 return advance(i);
@@ -1757,11 +1953,13 @@ public class FusBodyProcessor extends FusProcessor {
                         state.push(State.BACKSLASH);
                     } else if (i == '\n') {
                         state.pop();
+                        state.push(State.AFTER_CASE);
                         state.push(State.SCOPE_END);
                         state.push(State.EMPTY_STATEMENT);
                         result.append("->{\n");
                     } else if (i == ',') {
                         state.pop();
+                        state.push(State.AFTER_CASE);
                         state.push(State.SCOPE_END);
                         state.push(State.STAT_END);
                         state.push(State.EMPTY_INLINE_STATEMENT);
@@ -1770,6 +1968,7 @@ public class FusBodyProcessor extends FusProcessor {
                         result.appendCodePoint(i);
                     } else {
                         state.pop();
+                        state.push(State.AFTER_CASE);
                         state.push(State.SCOPE_END);
                         state.push(State.EMPTY_STATEMENT);
                         result.append("->{");
@@ -1795,6 +1994,7 @@ public class FusBodyProcessor extends FusProcessor {
                         default -> {
                             if (!Character.isWhitespace(i)) {
                                 state.pop();
+                                state.push(State.AFTER_IF);
                                 state.push(State.NAKED_SCOPE_EXP_STAT);
                                 state.push(State.LAMBDA_EXP);
                                 result.append("else if(");

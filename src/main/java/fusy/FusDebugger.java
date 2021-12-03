@@ -98,7 +98,8 @@ public class FusDebugger extends FusProcessor {
 
     @Override
     public void terminateSubProcess() {
-
+        throw new DebuggerException(sources.asString("") + " EXCEPTION AT LINE " + lineCounter + ": " + line.toString() +
+                "\n Unexpected end of code");
     }
 
     @Override
