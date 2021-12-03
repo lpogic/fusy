@@ -1335,7 +1335,7 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.AFTER_BT);
                             state.push(State.BT);
                         }
-                        case '@' -> state.push(State.AT);
+                        case '@' -> state.push(State.BT_AT);
                         case '#' -> {
                             result.append(",");
                             state.pop();
