@@ -1,5 +1,9 @@
+# Interpreter Fusy dla JVM
+Projekt kompilatora i środowiska uruchomieniowego dla aplikacji tworzonych w języku Fusy.
+
 # Fusy
-Język programowania Fusy. Skryptowy, statycznie typowany, pasożyt Javy ( kompilowany do pliku .java ). Stworzony dla zabawy. Użycie na własne ryzyko :)
+Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacji.
+
 # Próbka
 (rozwiązanie zadania <a href="http://rosettacode.org/wiki/Dijkstra%27s_algorithm">http://rosettacode.org/wiki/Dijkstra%27s_algorithm</a>)
 ```
