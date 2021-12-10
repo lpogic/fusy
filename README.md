@@ -1,6 +1,14 @@
 # Interpreter Fusy dla JVM
 Projekt kompilatora i środowiska uruchomieniowego dla aplikacji tworzonych w języku Fusy.
 
+## Użycie
+
+1. Pobierz i rozpakuj najnowszą wersję skompilowaną
+2. Uruchom plik launch.bat
+3. Podaj lokalizację pliku ze skryptem (np. przeciągając plik ze skryptem na obszar terminala) i naciśnij Enter
+
+Po zakończeniu wykonywania skryptu można uruchomić kolejny wykonując krok 3, albo zamknąć terminal wpisując 'exit'.
+
 # Fusy
 Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacji.
 
