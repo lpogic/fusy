@@ -9,7 +9,7 @@ import static suite.suite.$uite.$;
 public class FusBodyProcessor extends FusProcessor {
 
     public enum State {
-        DISCARD, TERMINATED, EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRING_HASH, STRHS_END, CB_EXP, RB_EXP, STR_ENDLINE,
+        DISCARD, TERMINATED, EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRCB_END, CB_EXP, RB_EXP, STR_ENDLINE,
         CHARACTER, STR_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_NEXT, AFTER_BT, BT_ID, BT_HASH, STAT_END,
         ARRAY_INDEX, ARRAY_INIT, ARRAY_INIT_BETWEEN, ARRAY_END, COLON, DOUBLE_COLON, COLON_METHOD, FOR_SCOPE_EXP, FSE_ID, EXP_END, FSE_AFTER_ID,
         SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT, ELF_SCOPE, EMPTY_INLINE_STATEMENT, INLINE_STATEMENT,
@@ -1167,41 +1167,19 @@ public class FusBodyProcessor extends FusProcessor {
                             result.appendCodePoint(i);
                         }
                         case '\\' -> state.push(State.STR_BACKSLASH);
-                        case '#' -> {
-                            state.push(State.STRING_HASH);
-                            result.append("\" + ");
+                        case '{' -> {
+                            result.append("\"+(");
                             token = new StringBuilder();
+                            state.push(State.STRCB_END);
+                            state.push(State.CB_EXP);
                         }
                         case '\n' -> state.push(State.STR_ENDLINE);
                         default -> result.appendCodePoint(i);
                     }
                 }
-                case STRING_HASH -> {
-                    switch (i) {
-                        case '{' -> {
-                            result.append("(");
-                            state.pop();
-                            state.push(State.STRHS_END);
-                            state.push(State.CB_EXP);
-                        }
-                        case '\\' -> {
-                            state.pop();
-                            result.append(token).append(" + \"");
-                        }
-                        default -> {
-                            if (Character.isJavaIdentifierPart(i)) {
-                                token.appendCodePoint(i);
-                            } else {
-                                state.pop();
-                                result.append(token).append(" + \"");
-                                return advance(i);
-                            }
-                        }
-                    }
-                }
-                case STRHS_END -> {
+                case STRCB_END -> {
                     state.pop();
-                    result.append(") + \"");
+                    result.append(")+\"");
                 }
                 case CHARACTER -> {
                     if (i == '\'') {
@@ -1216,7 +1194,7 @@ public class FusBodyProcessor extends FusProcessor {
                 }
                 case STR_BACKSLASH -> {
                     state.pop();
-                    if (i == '#' || i == ' ') {
+                    if (i == '{' || i == ' ') {
                         result.appendCodePoint(i);
                     } else {
                         result.append("\\").appendCodePoint(i);
@@ -1523,6 +1501,11 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.AT_QUESTION);
                             state.push(State.FUSY_TYPE);
+                        }
+                        case '>' -> {
+                            result.append("()->");
+                            state.pop();
+                            state.push(State.LAMBDA_EXP);
                         }
                         default -> {
                             if(i == '{' || Character.isJavaIdentifierStart(i)) {
