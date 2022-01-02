@@ -21,7 +21,7 @@ Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacj
 \\\
 \\ Przypisz nowej zmiennej "startNode" wartość "a"(String)
 #startNode = "a"
-\\ Uniwersalna struktura danych "Subject" w postaci zbioru liter od "a" do "f"
+\\ Uniwersalna struktura danych "Subject" jako zbiór liter od "a" do "f"
 #vertices = [ .a[] .b[] .c[] .d[] .e[] .f[] ]
 #edges = []:merge[    \\ Wywołanie metody "merge" na pustym Subject
   .a [ .b [ 7 ] ]
@@ -33,7 +33,7 @@ Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacj
   .c [ .f [ 2 ] ]
   .d [ .e [ 6 ] ]
   .e [ .f [ 9 ] ]
-]    \\ Utworzenie grafu przez podanie krawędzi
+]    \\ Subject jako drzewo
 
 
 @record Link( Object from, Object to, Integer cost, Object lastNode) <    \\ Definicja rekordu "Link"
@@ -43,7 +43,7 @@ Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacj
  \\ Iterowanie po całej kolekcji; Wywołanie metody "eachRaw" bez argumentów; z użyciem kropki i nawiasów
  for #v vertices.eachRaw()
   if !startNode.equals(v)
-    \\ Przypisanie do "iclass" klasy Integer
+    \\ Przypisanie do zmiennej "iclass" klasy Integer
     #iclass = @Integer
     input.set(new Link(startNode, v, edges.in(startNode).in(v).as(iclass, null), startNode))
   <    \\ Domknięcie if-a
@@ -51,16 +51,16 @@ Eksperymentalny język programowania do szybkiego tworzenia niewielkich aplikacj
 
 \\ Nagłówek funkcji "lowestCost", przyjmującej argument "input" typu Subject i zwracającej obiekt typu Link
 @Link lowestCost(Subject input)
-  \\ Funkcja lambda "@(l) return l.cost() != null <"
-  #withCost = input.eachAs(@Link).select(@(l) return l.cost() != null <)
+  \\ "@(l) return l.cost() != null <" to funkcja lambda ( dłuższa forma )
+  #withCost = input.eachAs(@Link).select(@(l) return l.cost() != null )
   \\ Wywołanie metody "first" bez argumentów; z użyciem dwukropka i z pominięciem nawiasów
   #lowest = withCost:first
-  \\ for i if w formie jednoliniowej
+  \\ for i if w postaci jednoliniowej ( z przecinkiem jako separator )
   for #l withCost, if lowest:cost > l:cost, lowest = l
   return lowest
 <    \\ Domknięcie funkcji "lowestCost"
 
-\\ "@> lowestCost(input)" = Jednoliniowa funkcja lambda bez argumentów
+\\ "@> lowestCost(input)" to krótsza forma funkcji lambda bez argumentów
 for #lc pull(@> lowestCost(input))
   if lc == null, break
   input.unset(lc)
@@ -80,8 +80,8 @@ for #lc pull(@> lowestCost(input))
   for #o c 
     \\ Operator wyboru ( isTrue ? valueIfTrue !! valueIfFalse )
     out:print(c:firstFall ? "[ " !! "\n  ")
-    \\ Formatowany String z użyciem #{ wyrażenie, które zostanie sprowadzone toString }
-    out:print("#{ o:in:raw }-->#{ o:raw }")
+    \\ Formatowany String z użyciem { wyrażenie, które zostanie sprowadzone toString }
+    out:print("{ o:in:raw }-->{ o:raw }")
   <
   out:println(" ]")
 <
