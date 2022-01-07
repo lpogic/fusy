@@ -1,5 +1,7 @@
 package fusy.setup;
 
+import fusy.Fusy;
+import fusy.FusyThread;
 import suite.suite.Subject;
 import suite.suite.Suite;
 import suite.suite.util.Cascade;
@@ -10,11 +12,23 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
 
 public class Console implements Common {
-    protected Scanner in = new Scanner(System.in);
-    protected PrintStream out = System.out;
+    protected final Scanner in;
+    protected final PrintStream out;
+    protected final Fusy os;
+
+    public Console() {
+        this(new Scanner(System.in), System.out, Fusy.local);
+    }
+
+    public Console(Scanner in, PrintStream out, Fusy os) {
+        this.in = in;
+        this.out = out;
+        this.os = os;
+    }
 
     public void hold(long ms) {
         try {
@@ -187,13 +201,14 @@ public class Console implements Common {
         return Sequence.ofEntire(() -> str.codePoints().iterator());
     }
 
-    public Sequence<String> lines(Reader reader) {
+    public Cascade<String> lines(Reader reader) {
         var bufferedReader = reader instanceof BufferedReader b ? b : new BufferedReader(reader);
-        return () -> new Iterator<>() {
+        return new Cascade<>(new Iterator<>() {
             String next = null;
 
             @Override
             public boolean hasNext() {
+                if(next != null) return true;
                 try {
                     return (next = bufferedReader.readLine()) != null;
                 } catch (IOException e) {
@@ -209,7 +224,7 @@ public class Console implements Common {
                     throw new RuntimeException(e);
                 }
             }
-        };
+        });
     }
 
     public Sequence<String> split(String splitted, String splitter) {

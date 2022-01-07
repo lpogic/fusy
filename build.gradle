@@ -11,7 +11,7 @@ repositories {
 }
 
 application {
-    mainClassName = 'fusy.Main'
+    mainClassName = 'fusy.Fusy'
 }
 
 plugins.withType(JavaPlugin).configureEach {

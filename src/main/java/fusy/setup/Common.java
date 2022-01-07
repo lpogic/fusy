@@ -1,8 +1,6 @@
 package fusy.setup;
 
-import fusy.FusyThread;
 import fusy.Repeater;
-import suite.suite.action.Statement;
 import suite.suite.util.Sequence;
 
 import java.util.Iterator;
@@ -109,16 +107,5 @@ public interface Common {
 
     default <T> Sequence<T> pull(Supplier<T> supplier) {
         return Sequence.pull(supplier);
-    }
-
-    default FusyThread timer(long delay, Statement callback) {
-        var thread = new FusyThread(() -> {
-            try {
-                Thread.sleep(delay);
-                callback.play();
-            } catch (InterruptedException ignored) {}
-        });
-        thread.start();
-        return thread;
     }
 }

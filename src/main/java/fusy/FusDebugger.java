@@ -108,6 +108,7 @@ public class FusDebugger extends FusProcessor {
         var setup = $program.in(FusBodyProcessor.Result.SETUP).asString("");
         var program = switch (setup) {
             case "graphic" -> """
+                    import fusy.Fusy;
                     import static fusy.FusyFun.*;
                     import fusy.FusyDrop;
                     import suite.suite.$uite;
@@ -117,16 +118,15 @@ public class FusDebugger extends FusProcessor {
                     import suite.suite.util.Sequence;
                     import java.util.Objects;
                     import java.util.Arrays;
-                    import java.math.BigDecimal;
                     import airbricks.Wall;
                     import fusy.setup.Graphic;
                     """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                                     
                     @SuppressWarnings("unchecked")
-                    class fusy extends Graphic {
+                    class Fus extends Graphic {
                         public static void main(String[] args) throws Exception {
                             Wall.play($uite.$(
-                                                Wall.class, $uite.$(new fusy()),
+                                                Wall.class, $uite.$(new Fus()),
                                                 "w", $uite.$(800),
                                                 "h", $uite.$(800),
                                                 "title", $uite.$("Fusy window")
@@ -140,7 +140,7 @@ public class FusDebugger extends FusProcessor {
                 }
                 """;
             case "console", "" -> """
-                import java.math.BigDecimal;
+                import fusy.Fusy;
                 import static fusy.FusyFun.*;
                 import fusy.FusyDrop;
                 import suite.suite.$uite;
@@ -154,12 +154,12 @@ public class FusDebugger extends FusProcessor {
                 """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                 
                 @SuppressWarnings("unchecked")
-                class fusy extends Console {
+                class Fus extends Console {
                     public static void main(String[] args) throws Exception {
-                        new fusy(args);
+                        new Fus(args);
                     }
                     
-                    fusy(String[] args) throws Exception {
+                    Fus(String[] args) throws Exception {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                     + "}\n" +
                     $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """

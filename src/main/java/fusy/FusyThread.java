@@ -1,6 +1,6 @@
 package fusy;
 
-public class FusyThread extends Thread {
+public class FusyThread extends Thread implements AutoCloseable {
     long startTime;
 
     public FusyThread() {
@@ -44,11 +44,16 @@ public class FusyThread extends Thread {
         super.start();
     }
 
-    public long born() {
+    public long startTime() {
         return startTime;
     }
 
-    public long lifetime() {
+    public long length() {
         return System.currentTimeMillis() - startTime;
+    }
+
+    @Override
+    public void close() throws Exception {
+        join();
     }
 }
