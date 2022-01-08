@@ -18,7 +18,8 @@ public class FusBodyProcessor extends FusProcessor {
         ES_PLUS, ES_MINUS, EXCLAMATION, CATCH, CSE_ID, AFTER_BTI, HASH_ID, HASH_NEXT_ID, STATEMENT_VARIABLE,
         TRY_ID, TRY_SCOPE_EXP, AID_DOT, DOT_BRACE_STRING, DBS_END, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP,
         ASSIGN_EXP, DOT, NEW, NEW_ARRAY, AFTER_NEW_ARRAY, NEW_AFTER_TYPE, INSTANCEOF, INSTANCEOF_ID,
-        CATCH_VAR_ID, AFTER_TRY, AFTER_IF, AFTER_CASE, AFTER_SWITCH, BT_AFTER_ID, BT_AT, BT_AT_TYPE, BT_AT_CAST
+        CATCH_VAR_ID, AFTER_TRY, AFTER_IF, AFTER_CASE, AFTER_SWITCH, BT_AFTER_ID, BT_AT, BT_AT_TYPE, BT_AT_CAST,
+        BEFORE_PIN, PIN
     }
 
     enum Result {
@@ -878,6 +879,12 @@ public class FusBodyProcessor extends FusProcessor {
                                 state.pop();
                                 state.push(State.SCOPE);
                                 result.append("{");
+                                return advance(i);
+                            }
+                            case "pin" -> {
+                                state.pop();
+                                state.pop();
+                                state.push(State.BEFORE_PIN);
                                 return advance(i);
                             }
                             case "try" -> {
@@ -2003,6 +2010,22 @@ public class FusBodyProcessor extends FusProcessor {
                                 return advance(i);
                             }
                         }
+                    }
+                }
+                case BEFORE_PIN -> {
+                    if(Character.isJavaIdentifierStart(i)) {
+                        token = new StringBuilder();
+                        state.pop();
+                        state.push(State.PIN);
+                        return advance(i);
+                    }
+                }
+                case PIN -> {
+                    if(Character.isJavaIdentifierPart(i)) {
+                        token.appendCodePoint(i);
+                    } else {
+                        result.append(token).append(":");
+                        state.pop();
                     }
                 }
             }

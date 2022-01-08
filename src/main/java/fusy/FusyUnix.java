@@ -54,12 +54,16 @@ public class FusyUnix implements Fusy {
 
     public FusyThread chooseFile(Consumer<String> fileConsumer) {
         return run(() -> {
-            var process = shell(Path.of(javaHome, "rsc", "sh", "chooseFile.sh").toString());
-            var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            if("OK".equals(br.readLine())) {
-                fileConsumer.accept(br.readLine());
+            try {
+                var process = shell(Path.of(javaHome, "rsc", "sh", "chooseFile.sh").toString());
+                var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                if ("OK".equals(br.readLine())) {
+                    fileConsumer.accept(br.readLine());
+                }
+                process.waitFor();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            process.waitFor();
         });
     }
 

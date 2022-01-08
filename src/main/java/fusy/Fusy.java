@@ -1,7 +1,5 @@
 package fusy;
 
-import suite.suite.action.DiceyStatement;
-
 import java.io.*;
 import java.util.Scanner;
 import java.util.ArrayList;
@@ -12,6 +10,7 @@ import java.util.regex.Pattern;
 public interface Fusy {
 
     String javaHome = System.getProperty("java.home");
+//    String javaHome = "C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\jre";
     Fusy local = getLocalFusy(System.getProperty("os.name"));
 
     static Fusy getLocalFusy(String osName) {
@@ -23,7 +22,7 @@ public interface Fusy {
     }
 
     static void main(String[] args) {
-//        javaHome = "C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\jre"; args = new String[]{"C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\skrypt.txt"};
+//        args = new String[]{"C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\skrypt.txt"};
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
             while(true) {
@@ -85,17 +84,17 @@ public interface Fusy {
         runFus(a);
     }
 
-    default FusyThread run(DiceyStatement callback) {
-        var thread = new FusyThread(callback::play);
+    default FusyThread run(Runnable callback) {
+        var thread = new FusyThread(callback);
         thread.start();
         return thread;
     }
 
-    default FusyThread run(long delay, DiceyStatement callback) {
+    default FusyThread run(long delay, Runnable callback) {
         var thread = new FusyThread(() -> {
             try {
                 Thread.sleep(delay);
-                callback.play();
+                callback.run();
             } catch (InterruptedException ignored) {}
         });
         thread.start();

@@ -1,9 +1,11 @@
 package fusy.setup;
 
 import fusy.Fusy;
+import fusy.FusyFun;
 import fusy.FusyThread;
 import suite.suite.Subject;
 import suite.suite.Suite;
+import suite.suite.action.DiceyStatement;
 import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 import suite.suite.util.Series;
@@ -219,7 +221,11 @@ public class Console implements Common {
             @Override
             public String next() {
                 try {
-                    return next != null ? next : bufferedReader.readLine();
+                    if(next != null) {
+                        var n = next;
+                        next = null;
+                        return n;
+                    } else return bufferedReader.readLine();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

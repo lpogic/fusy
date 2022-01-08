@@ -57,12 +57,16 @@ public class FusyWindows implements Fusy {
 
     public FusyThread chooseFile(Consumer<String> fileConsumer) {
         return run(() -> {
-            var process = powerShell(Path.of(javaHome, "rsc", "ps1", "chooseFile.ps1").toString());
-            var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            if("OK".equals(br.readLine())) {
-                fileConsumer.accept(br.readLine());
+            try {
+                var process = powerShell(Path.of(javaHome, "rsc", "ps1", "chooseFile.ps1").toString());
+                var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                if("OK".equals(br.readLine())) {
+                    fileConsumer.accept(br.readLine());
+                }
+                process.waitFor();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            process.waitFor();
         });
     }
 
