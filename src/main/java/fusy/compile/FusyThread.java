@@ -1,4 +1,4 @@
-package fusy;
+package fusy.compile;
 
 public class FusyThread extends Thread implements AutoCloseable {
     long startTime;

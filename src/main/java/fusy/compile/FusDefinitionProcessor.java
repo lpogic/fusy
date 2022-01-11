@@ -1,4 +1,4 @@
-package fusy;
+package fusy.compile;
 
 import suite.suite.Subject;
 
@@ -10,7 +10,7 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     enum State {
         DISCARD, BEFORE_TYPE, TYPE, HEADER, BODY, ENUM_HEADER, ENUM_PENDING, ENUM_OPTION,
-        ENUM_OPTION_CSTR, ENUM_AFTER_CSTR, ENUM_BODY, BEAK, BACKBEAK, FUSY_FUN, INLINE_BODY,
+        ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
         RECORD_HEADER, RECORD_COMPONENTS
@@ -234,15 +234,13 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case ENUM_HEADER -> {
-                if(i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(i == '\n') {
-                    state.push(State.ENUM_PENDING);
-                    result.append("{\n");
-                } else if (i == '<') {
-                    state.push(State.BEAK);
-                } else {
-                    result.appendCodePoint(i);
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case '(' -> {
+                        state.push(State.ENUM_PENDING);
+                        result.append("{");
+                    }
+                    default -> result.appendCodePoint(i);
                 }
             }
             case BEAK -> {
@@ -263,86 +261,50 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case ENUM_PENDING -> {
-                if(Character.isJavaIdentifierPart(i)) {
-                    state.pop();
+                if(Character.isJavaIdentifierStart(i)) {
                     state.push(State.ENUM_OPTION);
                     advance(i);
-                } else if(i == '>') {
+                } else if (i == '\\') {
+                    state.push(State.BACKSLASH);
+                } else if(i == ')') {
+                    result.append(";");
+                    subProcessor = new FusBodyProcessor(this);
+                    subProcessor.getReady();
                     state.pop();
-                    state.push(State.BACKBEAK);
-                } else if(i == '<') {
-                    result.append("}");
-                    parentProcessor.terminateSubProcess();
-                    state.push(State.TERMINATED);
+                    state.push(State.ENUM_BODY);
+                } else if(Character.isWhitespace(i)) {
+                    result.appendCodePoint(i);
                 }
             }
             case ENUM_OPTION -> {
-                if(i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(Character.isJavaIdentifierPart(i)) {
-                    result.appendCodePoint(i);
-                } else if(i == ',') {
-                    result.appendCodePoint(i);
-                    state.pop();
-                    state.push(State.ENUM_PENDING);
-                } else if(i == '\n') {
-                    result.append(",\n");
-                    state.pop();
-                    state.push(State.ENUM_PENDING);
-                } else if(i == '(') {
-                    result.append("(");
-                    state.pop();
-                    state.push(State.ENUM_OPTION_CSTR);
-                    var fusBodyProcessor = new FusBodyProcessor(this);
-                    fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
-                    subProcessor = fusBodyProcessor;
-                } else if(i == '>') {
-                    state.pop();
-                    state.push(State.BACKBEAK);
-                } else if(i == '<') {
-                    result.append("}");
-                    parentProcessor.terminateSubProcess();
-                    state.push(State.TERMINATED);
-                }
-            }
-            case ENUM_AFTER_CSTR -> {
-                if(i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(Character.isJavaIdentifierPart(i)) {
-                    result.append(",");
-                    state.pop();
-                    state.push(State.ENUM_OPTION);
-                    advance(i);
-                } else if(i == ',' || i == '\n') {
-                    result.append(",");
-                    state.pop();
-                    state.push(State.ENUM_PENDING);
-                } else if(i == '>') {
-                    state.pop();
-                    state.push(State.BACKBEAK);
-                } else if(i == '<') {
-                    result.append("}");
-                    parentProcessor.terminateSubProcess();
-                    state.push(State.TERMINATED);
-                }
-            }
-            case BACKBEAK -> {
-                if (i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(i == '\n') {
-                    state.pop();
-                    state.push(State.ENUM_BODY);
-                    result.append(";\n");
-                    subProcessor = new FusBodyProcessor(this);
-                    subProcessor.getReady();
-                } else if(i == '<') {
-                    state.push(State.BEAK);
-                } else if(Character.isWhitespace(i)) {
-                    result.appendCodePoint(i);
-                } else {
-                    result.append(">");
-                    state.pop();
-                    advance(i);
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case ',' -> {
+                        result.appendCodePoint(i);
+                        state.pop();
+                    }
+                    case '\n' -> {
+                        result.append(",\n");
+                        state.pop();
+                    }
+                    case '(' -> {
+                        result.append("(");
+                        var fusBodyProcessor = new FusBodyProcessor(this);
+                        fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                        subProcessor = fusBodyProcessor;
+                        state.pop();
+                        state.push(State.DISCARD);
+                        state.push(State.ENUM_OPTION_CSTR);
+                    }
+                    case ')' -> {
+                        state.pop();
+                        return advance(i);
+                    }
+                    default -> {
+                        if(Character.isJavaIdentifierPart(i)) {
+                            result.appendCodePoint(i);
+                        }
+                    }
                 }
             }
             case TYPE, BODY, INLINE_BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN, METHOD_ARGUMENTS,
@@ -362,7 +324,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case DOUBLE_BACKSLASH -> {
-                if (i == '>') {
+                if (i == '\\') {
                     state.pop();
                     state.push(State.MULTI_LINE_COMMENT);
                 } else {
@@ -377,7 +339,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case MULTI_LINE_COMMENT -> {
-                if (i == '<') {
+                if (i == '\\') {
                     state.push(State.MLC_BACKSLASH);
                 }
             }
@@ -392,7 +354,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 if (i == '\\') {
                     state.pop();
                 } else {
-                    advance(i);
+                    return advance(i);
                 }
             }
             case INSERT -> {
@@ -449,9 +411,8 @@ public class FusDefinitionProcessor extends FusProcessor {
             case ENUM_OPTION_CSTR -> {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
-                result.append(stats);
+                result.append(stats).append("),");
                 state.pop();
-                state.push(State.ENUM_AFTER_CSTR);
             }
             case FUSY_FUN -> {
                 var $ = subProcessor.finish();

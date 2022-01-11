@@ -1,9 +1,6 @@
-package fusy;
+package fusy.compile;
 
 import suite.processor.IntProcessor;
-import suite.suite.Subject;
-
-import java.util.Stack;
 
 public abstract class FusProcessor implements IntProcessor {
 

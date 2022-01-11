@@ -1,5 +1,8 @@
 package fusy;
 
+import fusy.compile.FusDebugger;
+import fusy.compile.FusyThread;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;

@@ -1,4 +1,4 @@
-package fusy;
+package fusy.compile;
 
 public class DebuggerException extends RuntimeException {
 

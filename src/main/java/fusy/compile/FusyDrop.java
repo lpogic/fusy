@@ -1,4 +1,4 @@
-package fusy;
+package fusy.compile;
 
 import java.util.Objects;
 

@@ -1,4 +1,4 @@
-package fusy;
+package fusy.compile;
 import suite.suite.Subject;
 
 import java.io.*;
@@ -8,7 +8,7 @@ import static suite.suite.$uite.$;
 
 public class FusDebugger extends FusProcessor {
 
-    enum Result {
+    public enum Result {
         CODE, SETUP
     }
 
@@ -109,8 +109,8 @@ public class FusDebugger extends FusProcessor {
         var program = switch (setup) {
             case "graphic" -> """
                     import fusy.Fusy;
-                    import static fusy.FusyFun.*;
-                    import fusy.FusyDrop;
+                    import static fusy.compile.FusyFun.*;
+                    import fusy.compile.FusyDrop;
                     import suite.suite.$uite;
                     import suite.suite.Suite;
                     import suite.suite.Subject;
@@ -141,8 +141,8 @@ public class FusDebugger extends FusProcessor {
                 """;
             case "console", "" -> """
                 import fusy.Fusy;
-                import static fusy.FusyFun.*;
-                import fusy.FusyDrop;
+                import static fusy.compile.FusyFun.*;
+                import fusy.compile.FusyDrop;
                 import suite.suite.$uite;
                 import suite.suite.Suite;
                 import suite.suite.Subject;

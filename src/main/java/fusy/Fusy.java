@@ -1,5 +1,8 @@
 package fusy;
 
+import fusy.compile.DebuggerException;
+import fusy.compile.FusyThread;
+
 import java.io.*;
 import java.util.Scanner;
 import java.util.ArrayList;

@@ -4,4 +4,5 @@ module fusy {
     requires bricks;
     exports fusy;
     exports fusy.setup;
+    exports fusy.compile;
 }
