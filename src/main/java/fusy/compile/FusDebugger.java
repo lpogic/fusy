@@ -111,6 +111,7 @@ public class FusDebugger extends FusProcessor {
                     import fusy.Fusy;
                     import static fusy.compile.FusyFun.*;
                     import fusy.compile.FusyDrop;
+                    import fusy.compile.FusySubjectBuilder;
                     import suite.suite.$uite;
                     import suite.suite.Suite;
                     import suite.suite.Subject;
@@ -143,6 +144,7 @@ public class FusDebugger extends FusProcessor {
                 import fusy.Fusy;
                 import static fusy.compile.FusyFun.*;
                 import fusy.compile.FusyDrop;
+                import fusy.compile.FusySubjectBuilder;
                 import suite.suite.$uite;
                 import suite.suite.Suite;
                 import suite.suite.Subject;
