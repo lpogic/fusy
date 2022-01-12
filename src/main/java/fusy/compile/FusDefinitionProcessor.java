@@ -180,7 +180,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                     state.pop();
                     state.push(State.RECORD_COMPONENTS);
                     var fusBodyProcessor = new FusBodyProcessor(this);
-                    fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                    fusBodyProcessor.getReady(FusBodyProcessor.State.ARG_TYPE);
                     subProcessor = fusBodyProcessor;
                 } else {
                     result.appendCodePoint(i);
@@ -212,7 +212,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.METHOD_ARGUMENTS);
                             var fusBodyProcessor = new FusBodyProcessor(this);
-                            fusBodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                            fusBodyProcessor.getReady(FusBodyProcessor.State.ARG_TYPE);
                             subProcessor = fusBodyProcessor;
                         }
                     }

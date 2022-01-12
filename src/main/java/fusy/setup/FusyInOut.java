@@ -21,4 +21,8 @@ public record FusyInOut (Scanner scanner, PrintStream printer) {
     public void println(String str) {
         printer.println(str);
     }
+
+    public void println() {
+        printer.println();
+    }
 }
