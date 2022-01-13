@@ -26,7 +26,7 @@ public class FusyAlgorithm implements Common {
         if(size > sub.size()) throw new IndexOutOfBoundsException();
         return () -> new Iterator<>(){
             int i = 0;
-            final Subject indexed = sub.index(range(0, sub.size() - 1)).set();
+            final Subject indexed = sub.index(Common.range(0, sub.size() - 1)).set();
 
             public boolean hasNext() {
                 return i < factorial(sub.size());

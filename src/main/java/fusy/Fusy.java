@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
-
 public interface Fusy {
 
     String javaHome = System.getProperty("java.home"); //@Deploy

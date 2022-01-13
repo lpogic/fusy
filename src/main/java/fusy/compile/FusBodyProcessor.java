@@ -1161,6 +1161,14 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.EXP_END);
                             state.push(State.BT);
                         }
+                        case '.' -> {
+                            result.append(".in(");
+                            token = new StringBuilder();
+                            state.pop();
+                            state.push(State.AFTER_BTI);
+                            state.push(State.EXP_END);
+                            state.push(State.DOT_STRING);
+                        }
                         default -> {
                             if (Character.isJavaIdentifierPart(i)) {
                                 result.append(".");
@@ -1230,26 +1238,21 @@ public class FusBodyProcessor extends FusProcessor {
                         return advance(i);
                     }
                 }
-                case AFTER_IF, AFTER_CASE, AFTER_SWITCH, AFTER_TRY -> {
+                case AFTER_IF, AFTER_CASE, AFTER_SWITCH -> {
                         state.pop();
                         if(i != '\n' && i != MANUAL_LF) return advance(i);
                 }
-                case AID_DOT -> {
-                    switch (i) {
-                        case '.' -> {
-                            result.append(".in(");
-                            token = new StringBuilder();
-                            state.pop();
-                            state.push(State.AFTER_BTI);
-                            state.push(State.EXP_END);
-                            state.push(State.DOT_STRING);
-                        }
-                        default -> {
-                            result.append(".");
-                            state.pop();
-                            return advance(i);
-                        }
+                case AFTER_TRY -> {
+                    state.pop();
+                    if(i != MANUAL_LF) {
+                        result.append("catch(Exception e){io.hitException(e);}");
+                        if(i != '\n') return advance(i);
                     }
+                }
+                case AID_DOT -> {
+                    result.append(".");
+                    state.pop();
+                    return advance(i);
                 }
                 case CLOSE_BRACE -> {
                     result.appendCodePoint(')');
@@ -1284,6 +1287,8 @@ public class FusBodyProcessor extends FusProcessor {
                     } else if(i == '`') {
                         result.append("\"");
                         state.pop();
+                    } else if(i == '\\') {
+                        result.append("\\\\");
                     } else {
                         result.appendCodePoint(i);
                     }
@@ -1550,6 +1555,10 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.EXPRESSION);
                         }
                         case '}' -> state.pop();
+                        case ',' -> {
+                            advance('}');
+                            return advance('{');
+                        }
                         case '{' -> {
                             result.append("(");
                             state.push(State.LAMBDA);
@@ -1790,7 +1799,7 @@ public class FusBodyProcessor extends FusProcessor {
                                     if (state.peek() != State.STAT_END) {
                                         advance('<');
                                     }
-                                    advance('\n');
+                                    advance(MANUAL_LF);
                                 }
                             }
                             result.append("catch(Throwable ");
@@ -1806,11 +1815,11 @@ public class FusBodyProcessor extends FusProcessor {
                                     if (state.peek() != State.STAT_END) {
                                         advance('<');
                                     }
-                                    advance('\n');
+                                    advance(MANUAL_LF);
                                 }
                             }
-                            result.append("catch(Throwable $ignored){");
-                            state.push(State.SCOPE);
+                            result.append("catch(Throwable $ignored");
+                            state.push(State.NAKED_SCOPE_EXP_STAT);
                             return advance(i);
                         }
                         case '.' -> {
@@ -1828,7 +1837,7 @@ public class FusBodyProcessor extends FusProcessor {
                                         if (state.peek() != State.STAT_END) {
                                             advance('<');
                                         }
-                                        advance('\n');
+                                        advance(MANUAL_LF);
                                     }
                                 }
                                 result.append("catch(");

@@ -14,22 +14,22 @@ import java.util.function.BiFunction;
 
 
 public class Console implements Common {
-    protected final FusyInOut io;
-    protected final Fusy os;
-    protected final FusyFiles files;
-    protected final FusyAlgorithm alg;
+    public static final FusyInOut io = new FusyInOut(new Scanner(System.in), System.out, System.err);
+    public static final Fusy os = Fusy.local;
+    public static final FusyFiles files = new FusyFiles();
+    public static final FusyAlgorithm alg = new FusyAlgorithm();
 
 
-    public Console() {
-        this(new FusyInOut(new Scanner(System.in), System.out), Fusy.local, new FusyFiles(), new FusyAlgorithm());
-    }
+//    public Console() {
+//        this(new FusyInOut(new Scanner(System.in), System.out), Fusy.local, new FusyFiles(), new FusyAlgorithm());
+//    }
 
-    public Console(FusyInOut fusyInOut, Fusy os, FusyFiles fusyFiles, FusyAlgorithm algorithms) {
-        this.io = fusyInOut;
-        this.os = os;
-        this.files = fusyFiles;
-        this.alg = algorithms;
-    }
+//    public Console(FusyInOut fusyInOut, Fusy os, FusyFiles fusyFiles, FusyAlgorithm algorithms) {
+//        this.io = fusyInOut;
+//        this.os = os;
+//        this.files = fusyFiles;
+//        this.alg = algorithms;
+//    }
 
     public void hold(long ms) {
         try {

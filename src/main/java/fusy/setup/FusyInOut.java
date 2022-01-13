@@ -3,7 +3,7 @@ package fusy.setup;
 import java.io.PrintStream;
 import java.util.Scanner;
 
-public record FusyInOut (Scanner scanner, PrintStream printer) {
+public record FusyInOut (Scanner scanner, PrintStream printer, PrintStream errPrinter) {
 
     public String readln() {
         return scanner.nextLine();
@@ -14,15 +14,19 @@ public record FusyInOut (Scanner scanner, PrintStream printer) {
         return scanner.nextLine();
     }
 
-    public void print(String str) {
-        printer.print(str);
+    public void print(Object o) {
+        printer.print(o);
     }
 
-    public void println(String str) {
-        printer.println(str);
+    public void println(Object o) {
+        printer.println(o);
     }
 
     public void println() {
         printer.println();
+    }
+
+    public void hitException(Exception e) {
+        errPrinter.println(e.getMessage());
     }
 }

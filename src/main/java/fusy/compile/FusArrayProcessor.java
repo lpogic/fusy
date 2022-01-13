@@ -9,7 +9,7 @@ import static suite.suite.$uite.$;
 public class FusArrayProcessor extends FusProcessor {
 
     enum State {
-        DIM_EXP, FUSY_TYPE, DIMENSION, TERMINATED, DISCARD
+        DIM_EXP, AFTER_DIM_EXP, FUSY_TYPE, DIMENSION, TERMINATED, DISCARD
     }
 
     enum Result {
@@ -52,9 +52,9 @@ public class FusArrayProcessor extends FusProcessor {
             case DIMENSION -> {
                 if(i == '(') {
                     var bodyProcessor = new FusBodyProcessor(this);
-                    bodyProcessor.getReady(FusBodyProcessor.State.EXPRESSION);
+                    bodyProcessor.getReady(FusBodyProcessor.State.LAMBDA_EXP);
                     subProcessor = bodyProcessor;
-                    state.pop();
+                    state.push(State.AFTER_DIM_EXP);
                     state.push(State.DIM_EXP);
                 } else if(!Character.isWhitespace(i)){
                     var fusyTypeProcessor = new FusyTypeProcessor(this);
@@ -67,6 +67,10 @@ public class FusArrayProcessor extends FusProcessor {
                 }
             }
             case DIM_EXP, FUSY_TYPE -> subProcessor.advance(i);
+            case AFTER_DIM_EXP -> {
+              state.pop();
+              if(i == ',') return advance('(');
+            }
             case TERMINATED -> parentProcessor.advance(i);
         }
         return 0;
@@ -84,8 +88,6 @@ public class FusArrayProcessor extends FusProcessor {
             var $ = subProcessor.finish();
             dimensions.add($.in(FusBodyProcessor.Result.STATEMENTS).asString());
             state.pop();
-            state.push(State.DIMENSION);
-            state.push(State.DISCARD);
         }
     }
 

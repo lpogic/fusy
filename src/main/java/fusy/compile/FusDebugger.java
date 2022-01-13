@@ -108,11 +108,11 @@ public class FusDebugger extends FusProcessor {
         var setup = $program.in(FusBodyProcessor.Result.SETUP).asString("");
         var program = switch (setup) {
             case "graphic" -> """
+                    import static fusy.setup.Common.*;
                     import fusy.Fusy;
                     import static fusy.compile.FusyFun.*;
                     import fusy.compile.FusyDrop;
                     import fusy.compile.FusySubjectBuilder;
-                    import suite.suite.$uite;
                     import suite.suite.Suite;
                     import suite.suite.Subject;
                     import suite.suite.util.Series;
@@ -141,11 +141,11 @@ public class FusDebugger extends FusProcessor {
                 }
                 """;
             case "console", "" -> """
+                import static fusy.setup.Common.*;
                 import fusy.Fusy;
                 import static fusy.compile.FusyFun.*;
                 import fusy.compile.FusyDrop;
                 import fusy.compile.FusySubjectBuilder;
-                import suite.suite.$uite;
                 import suite.suite.Suite;
                 import suite.suite.Subject;
                 import suite.suite.util.Series;
@@ -153,6 +153,7 @@ public class FusDebugger extends FusProcessor {
                 import java.util.Objects;
                 import java.util.Arrays;
                 import fusy.setup.Console;
+                import static fusy.setup.Console.*;
                 """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
                 
                 @SuppressWarnings("unchecked")

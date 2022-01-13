@@ -13,7 +13,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_STATIC, STATIC
     }
 
     enum Result {
@@ -22,6 +22,7 @@ public class FusDefinitionProcessor extends FusProcessor {
 
     Stack<State> state;
     StringBuilder result;
+    StringBuilder token;
     FusBodyProcessor parentProcessor;
     FusProcessor subProcessor;
     boolean isImport;
@@ -108,7 +109,6 @@ public class FusDefinitionProcessor extends FusProcessor {
                         isPublic = false;
                     }
                     case '+' -> isPublic = true;
-                    case '*' -> result.append("static ");
                     case '?' -> {
                         result.append("abstract ");
                         isAbstract = true;
@@ -369,6 +369,35 @@ public class FusDefinitionProcessor extends FusProcessor {
                     result.appendCodePoint(i);
                 }
             }
+            case BEFORE_STATIC -> {
+                if(i == '\\') {
+                    state.push(State.BACKSLASH);
+                } else if(Character.isJavaIdentifierStart(i)) {
+                    token = new StringBuilder();
+                    state.pop();
+                    state.push(State.STATIC);
+                    return advance(i);
+                }
+            }
+            case STATIC -> {
+                if (Character.isJavaIdentifierPart(i)) {
+                    token.appendCodePoint(i);
+                } else {
+                    result.append("public $")
+                            .append(token)
+                            .append(" ")
+                            .append(token)
+                            .append(" = new $")
+                            .append(token)
+                            .append("(); public class $")
+                            .append(token)
+                            .append("{\n");
+                    subProcessor = new FusBodyProcessor(this);
+                    subProcessor.getReady();
+                    state.push(State.BODY);
+                    return advance(i);
+                }
+            }
         }
         return 0;
     }
@@ -467,7 +496,8 @@ public class FusDefinitionProcessor extends FusProcessor {
                 subProcessor = fusBodyProcessor;
             }
             case "insert" -> state.push(State.INSERT);
-            case "default", "final", "native", "static", "strictfp", "transient", "volatile" -> {
+            case "static" -> state.push(State.BEFORE_STATIC);
+            case "default", "final", "native", "strictfp", "transient", "volatile" -> {
                 result.append(complete).append(" ");
                 state.pop();
                 state.push(State.BEFORE_TYPE);
@@ -503,7 +533,12 @@ public class FusDefinitionProcessor extends FusProcessor {
                 state.push(State.INTERFACE_HEADER);
             }
             case "new" -> {
-                if(isPublic) result.append("public ");
+                if(!(parentProcessor != null
+                        && parentProcessor.parentProcessor instanceof FusDefinitionProcessor fdp
+                        && fdp.state.peek() == State.ENUM_BODY)
+                        && isPublic) {
+                    result.append("public ");
+                }
                 state.pop();
                 state.push(State.RESOURCE_HEADER);
             }
