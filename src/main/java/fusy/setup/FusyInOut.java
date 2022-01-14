@@ -26,6 +26,14 @@ public record FusyInOut (Scanner scanner, PrintStream printer, PrintStream errPr
         printer.println();
     }
 
+    public void printf(String format, Object ... objects) {
+        printer.printf(format, objects);
+    }
+
+    public void printfln(String format, Object ... objects) {
+        printer.printf(format + "%n", objects);
+    }
+
     public void hitException(Exception e) {
         errPrinter.println(e.getMessage());
     }

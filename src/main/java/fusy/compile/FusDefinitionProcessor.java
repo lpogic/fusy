@@ -13,7 +13,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_STATIC, STATIC
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON
     }
 
     enum Result {
@@ -113,6 +113,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                         result.append("abstract ");
                         isAbstract = true;
                     }
+                    case '*' -> result.append("static ");
                     case '.' -> result.append("final ");
                     case '!' -> throwing = true;
                     case '/' -> typeComplete("void");
@@ -369,17 +370,17 @@ public class FusDefinitionProcessor extends FusProcessor {
                     result.appendCodePoint(i);
                 }
             }
-            case BEFORE_STATIC -> {
+            case BEFORE_SINGLETON -> {
                 if(i == '\\') {
                     state.push(State.BACKSLASH);
                 } else if(Character.isJavaIdentifierStart(i)) {
                     token = new StringBuilder();
                     state.pop();
-                    state.push(State.STATIC);
+                    state.push(State.SINGLETON);
                     return advance(i);
                 }
             }
-            case STATIC -> {
+            case SINGLETON -> {
                 if (Character.isJavaIdentifierPart(i)) {
                     token.appendCodePoint(i);
                 } else {
@@ -496,8 +497,9 @@ public class FusDefinitionProcessor extends FusProcessor {
                 subProcessor = fusBodyProcessor;
             }
             case "insert" -> state.push(State.INSERT);
-            case "static" -> state.push(State.BEFORE_STATIC);
-            case "default", "final", "native", "strictfp", "transient", "volatile" -> {
+            case "singleton" -> state.push(State.BEFORE_SINGLETON);
+            case "throws" -> throwing = true;
+            case "default", "final", "native", "static", "strictfp", "transient", "volatile" -> {
                 result.append(complete).append(" ");
                 state.pop();
                 state.push(State.BEFORE_TYPE);

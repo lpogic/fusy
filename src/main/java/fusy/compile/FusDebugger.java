@@ -126,12 +126,13 @@ public class FusDebugger extends FusProcessor {
                     @SuppressWarnings("unchecked")
                     class Fus extends Graphic {
                         public static void main(String[] args) throws Exception {
-                            Wall.play($uite.$(
-                                                Wall.class, $uite.$(new Fus()),
-                                                "w", $uite.$(800),
-                                                "h", $uite.$(800),
-                                                "title", $uite.$("Fusy window")
-                                        ));
+                            var wallCnf = Suite.set();
+                            wallCnf.put(Wall.class, new Fus());
+                            wallCnf.put("w", 800);
+                            wallCnf.put("h", 800);
+                            wallCnf.put("title", "Fusy window");
+                            
+                            Wall.play(wallCnf);
                         }
                         
                         public void setup() {
