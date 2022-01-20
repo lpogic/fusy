@@ -1,12 +1,16 @@
 package fusy.compile;
+import fusy.Fusy;
 import suite.suite.Subject;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import static suite.suite.$uite.$;
 
 public class FusDebugger extends FusProcessor {
+
+    public String defaultPath = Fusy.javaHome;
 
     public enum Result {
         CODE, SETUP
@@ -18,6 +22,8 @@ public class FusDebugger extends FusProcessor {
     Subject sources;
     int autoVar;
 
+    Subject classpath;
+
     @Override
     public void getReady() {
         processor = new FusBodyProcessor(this);
@@ -26,6 +32,7 @@ public class FusDebugger extends FusProcessor {
         lineCounter = 1;
         sources = $();
         autoVar = 1;
+        classpath = $();
     }
 
     public void pushSource(String source) {
@@ -169,9 +176,71 @@ public class FusDebugger extends FusProcessor {
                     $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
+            case "selenium" -> """
+                import static fusy.setup.Common.*;
+                import fusy.Fusy;
+                import static fusy.compile.FusyFun.*;
+                import fusy.compile.FusyDrop;
+                import fusy.compile.FusySubjectBuilder;
+                import suite.suite.Suite;
+                import suite.suite.Subject;
+                import suite.suite.util.Series;
+                import suite.suite.util.Sequence;
+                import java.util.Objects;
+                import java.util.Arrays;
+                import fusy.setup.Console;
+                import static fusy.setup.Console.*;
+                
+                import java.time.Duration;
+                                    
+                import org.openqa.selenium.By;
+                import org.openqa.selenium.WebDriver;
+                import org.openqa.selenium.WebElement;
+                import org.openqa.selenium.chrome.ChromeDriver;
+                """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
+                
+                @SuppressWarnings("unchecked")
+                class Fus extends Console {
+                    public static void main(String[] args) throws Exception {
+                        new Fus(args);
+                    }
+                    
+                    Fus(String[] args) throws Exception {
+                    """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
+                    + "}\n" +
+                    $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                }
+                """;
+
+
+
             default -> throw new DebuggerException("Unsupported setup " + setup);
         };
         return $(Result.CODE, $(program),
                 Result.SETUP, $(setup));
+    }
+
+    public void buildAction(String str) {
+        var spl = str.split("\\s");
+        if(spl.length > 0) {
+            switch(spl[0]) {
+                case "classpath" -> {
+                    for(int i = 1;i < spl.length; ++i) {
+                        if(!spl[i].isBlank()) classpath.set(spl[i]);
+                    }
+                }
+                default -> {
+                    throw new DebuggerException("Undefined compiler action '" + str + "'.");
+                }
+            }
+        }
+    }
+
+    public String getClasspath() {
+        var sb = new StringBuilder();
+        var c = classpath.eachString().cascade();
+        if(c.hasNext()) sb.append(c.next());
+        for(var s : c) sb.append(";").append(s);
+        return sb.toString();
     }
 }

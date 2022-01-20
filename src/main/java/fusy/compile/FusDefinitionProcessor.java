@@ -2,6 +2,7 @@ package fusy.compile;
 
 import suite.suite.Subject;
 
+import java.io.File;
 import java.util.Stack;
 
 import static suite.suite.$uite.$;
@@ -13,7 +14,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, BUILD
     }
 
     enum Result {
@@ -359,15 +360,38 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case INSERT -> {
-                if (i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(i == '\n') {
-                    getDebugger().pushSource(result.toString().trim());
-                    result = new StringBuilder();
-                    parentProcessor.terminateSubProcess();
-                    state.push(State.TERMINATED);
-                } else {
-                    result.appendCodePoint(i);
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case '\n' -> {
+                        var str = result.toString().trim();
+                        if(str.contains(".")) {
+                            getDebugger().pushSource(str);
+                        } else {
+                            getDebugger().pushSource(getDebugger().defaultPath + File.separator +
+                                    "rsc" + File.separator + "fusy" + File.separator + str + ".fus");
+                        }
+                        result = new StringBuilder();
+                        parentProcessor.terminateSubProcess();
+                        state.push(State.TERMINATED);
+                    }
+                    case '%' -> result.append(getDebugger().defaultPath).append(File.separator);
+                    case '/' -> result.append(File.separator);
+                    default -> result.appendCodePoint(i);
+                }
+            }
+            case BUILD -> {
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case '\n' -> {
+                        var str = result.toString().trim();
+                        getDebugger().buildAction(str);
+                        result = new StringBuilder();
+                        parentProcessor.terminateSubProcess();
+                        state.push(State.TERMINATED);
+                    }
+                    case '%' -> result.append(getDebugger().defaultPath).append(File.separator);
+                    case '/' -> result.append(File.separator);
+                    default -> result.appendCodePoint(i);
                 }
             }
             case BEFORE_SINGLETON -> {
@@ -497,6 +521,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 subProcessor = fusBodyProcessor;
             }
             case "insert" -> state.push(State.INSERT);
+            case "build" -> state.push(State.BUILD);
             case "singleton" -> state.push(State.BEFORE_SINGLETON);
             case "throws" -> throwing = true;
             case "default", "final", "native", "static", "strictfp", "transient", "volatile" -> {

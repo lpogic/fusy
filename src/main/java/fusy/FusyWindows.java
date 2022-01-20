@@ -5,6 +5,7 @@ import fusy.compile.FusyThread;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,12 +25,18 @@ public class FusyWindows implements Fusy {
         output.close();
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
+        var setup = program.in(FusDebugger.Result.SETUP).asString();
         cmd.add("cmd");
         cmd.add("/c");
-        if("graphic".equals(program.in(FusDebugger.Result.SETUP).asString()) && System.console() == null) {
+        if("graphic".equals(setup) && System.console() == null) {
             cmd.add(javaHome + "\\bin\\javaw.exe");
         } else {
             cmd.add(javaHome + "\\bin\\java.exe");
+        }
+        var cp = debugger.getClasspath();
+        if(!cp.isEmpty()) {
+            cmd.add("-classpath");
+            cmd.add(cp);
         }
         cmd.add(javaHome + "\\fusy.java");
         cmd.addAll(List.of(args));

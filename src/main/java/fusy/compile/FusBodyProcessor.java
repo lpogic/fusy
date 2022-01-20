@@ -10,7 +10,7 @@ public class FusBodyProcessor extends FusProcessor {
 
     public enum State {
         DISCARD, TERMINATED, EMPTY_STATEMENT, STATEMENT, EXPRESSION, ID, AFTER_ID, STRING, STRING_END, RAW_STRING, STRCB_END, CB_EXP, RB_EXP, STR_ENDLINE,
-        CHARACTER, STR_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_NEXT, AFTER_BT, STAT_END,
+        CHARACTER, STR_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, BT, BT_LIST, BT_NEXT, AFTER_BT, STAT_END,
         ARRAY_INDEX, ARRAY_INIT, ARRAY_INIT_BETWEEN, ARRAY_END, COLON, DOUBLE_COLON, COLON_METHOD, CM_COLON, FOR_SCOPE_EXP, FSE_ID, EXP_END, FSE_AFTER_ID,
         SCOPE_EXP, SCOPE, SCOPE_END, CASE_SCOPE, NAKED_SCOPE_EXP_STAT, CASE_SCOPE_STAT, ELF_SCOPE, EMPTY_INLINE_STATEMENT, INLINE_STATEMENT,
         BACKSLASH, CLOSE_BRACE, DEFINITION, INLINE_DEFINITION, DOUBLE_BACKSLASH, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
@@ -1397,19 +1397,74 @@ public class FusBodyProcessor extends FusProcessor {
                             return advance(i);
                         }
                         case '#' -> state.push(State.HASH);
-                        case ';' -> {
-                            advance('[');
-                            advance(']');
-                        }
                         case ',' -> {
-                            advance(']');
                             advance('[');
+                            advance(']');
                         }
                         default -> {
                             if (!Character.isWhitespace(i)) {
                                 state.pop();
                                 state.push(State.BT_NEXT);
                                 return advance(i);
+                            }
+                        }
+                    }
+                }
+                case BT_LIST -> {
+                    switch (i) {
+                        case '"' -> {
+                            state.push(State.AFTER_ID);
+                            state.push(State.STRING_END);
+                            state.push(State.STRING);
+                            result.appendCodePoint(i);
+                        }
+                        case '`' -> {
+                            state.push(State.AFTER_ID);
+                            state.push(State.RAW_STRING);
+                            result.append("\"");
+                        }
+                        case '\'' -> {
+                            state.push(State.CHARACTER);
+                            result.appendCodePoint(i);
+                        }
+                        case '(' -> {
+                            result.append("(");
+                            state.push(State.AFTER_ID);
+                            state.push(State.DISCARD);
+                            state.push(State.EXP_END);
+                            state.push(State.EXPRESSION);
+                        }
+                        case ']' -> {
+                            state.pop();
+                            result.append(")");
+                        }
+                        case '[' -> {
+                            result.append(",FusySubjectBuilder.$$(");
+                            state.pop();
+                            state.push(State.AFTER_BT);
+                            state.push(State.BT);
+                        }
+                        case ',' -> result.append("),FusySubjectBuilder.$$(");
+                        case '@' -> state.push(State.AT);
+                        case '#' -> state.push(State.HASH);
+                        case '.' -> state.push(State.DOT);
+                        case '!' -> state.push(State.EXCLAMATION);
+                        case '\\' -> state.push(State.BACKSLASH);
+                        case '<' -> state.push(State.BEAK);
+                        case '{' -> {
+                            result.append("(");
+                            state.push(State.LAMBDA);
+                            state.push(State.DISCARD);
+                            state.push(State.EXP_END);
+                            state.push(State.CB_EXP);
+                        }
+                        default -> {
+                            if (Character.isJavaIdentifierPart(i)) {
+                                state.push(State.ID);
+                                token = new StringBuilder();
+                                return advance(i);
+                            } else if (!Character.isWhitespace(i)) {
+                                result.appendCodePoint(i);
                             }
                         }
                     }
@@ -1447,6 +1502,10 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.AFTER_BT);
                             state.push(State.BT);
+                        }
+                        case ',' -> {
+                            advance('[');
+                            advance(']');
                         }
                         case '@' -> state.push(State.AT);
                         case '#' -> state.push(State.HASH);
@@ -1486,13 +1545,9 @@ public class FusBodyProcessor extends FusProcessor {
                             return advance(i);
                         }
                         case '\\' -> state.push(State.BACKSLASH);
-                        case ';' -> {
-                            advance('[');
-                            advance(']');
-                        }
                         case ',' -> {
-                            advance(']');
                             advance('[');
+                            advance(']');
                         }
                         default -> {
                             if (!Character.isWhitespace(i)) {

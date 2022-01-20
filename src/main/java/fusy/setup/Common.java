@@ -1,12 +1,6 @@
 package fusy.setup;
 
 import fusy.Repeater;
-import fusy.compile.FusySubjectBuilder;
-import suite.suite.SolidSubject;
-import suite.suite.Subject;
-import suite.suite.Suite;
-import suite.suite.action.Action;
-import suite.suite.action.Statement;
 import suite.suite.util.Sequence;
 
 import java.util.Iterator;

@@ -11,4 +11,3 @@ project(':bricks').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/brick
 
 include ':airbricks'
 project(':airbricks').projectDir = new File("C://Users/1/Desktop/PRO/PRO_Java/airbricks")
-
