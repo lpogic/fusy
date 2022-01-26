@@ -2,8 +2,13 @@ package fusy;
 
 import fusy.compile.DebuggerException;
 import fusy.compile.FusyThread;
+import suite.suite.Subject;
+import suite.suite.Suite;
+import suite.suite.util.Cascade;
+import suite.suite.util.Sequence;
 
 import java.io.*;
+import java.net.Socket;
 import java.util.Scanner;
 import java.util.ArrayList;
 import java.util.function.Consumer;
@@ -11,8 +16,8 @@ import java.util.regex.Pattern;
 
 public interface Fusy {
 
-    String javaHome = System.getProperty("java.home"); //@Deploy
-//    String javaHome = "C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\jre"; //@Test
+    String home = System.getProperty("java.home"); //@Deploy
+//    String home = "C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\jre"; //@Test
     Fusy local = getLocalFusy(System.getProperty("os.name"));
 
     static Fusy getLocalFusy(String osName) {
@@ -50,13 +55,7 @@ public interface Fusy {
                     }
                     default -> {
                         try {
-                            var m = Pattern.compile("([^\\s\"]+)?(?:\"([^\"]*?)\")?").matcher(str);
-                            if(m.find()) {
-                                var fus = m.group().replaceAll("\"", "");
-                                var a = new ArrayList<String>();
-                                while(m.find()) a.add(m.group().replaceAll("\"", ""));
-                                local.runFus(fus, a.toArray(new String[0]));
-                            }
+                            local.localRunFus(str);
                         }
                         catch (DebuggerException de) {
                             System.err.println(de.getMessage());
@@ -75,6 +74,34 @@ public interface Fusy {
         }
     }
 
+    static Subject parseArgs(String[] args) {
+        var c = new Cascade<>(Sequence.ofEntire(args));
+        var r = Suite.set();
+        var i = 0;
+        var ap = "";
+        for(var a : c) {
+            if(a.startsWith("-")) {
+                if(ap.startsWith("-")) {
+                    r.set(ap.substring(1));
+                }
+                if(c.hasNext()) {
+                    ap = a;
+                } else {
+                    r.set(a.substring(1));
+                }
+            } else {
+                if(ap.startsWith("-")) {
+                    r.put(ap.substring(1), a);
+                } else {
+                    r.put(i++, a);
+                }
+                ap = a;
+            }
+        }
+        return r;
+    }
+
+    void localRunFus(String fus) throws IOException, InterruptedException;
     void runFus(String[] args) throws IOException, InterruptedException;
     default void runFus(String path) throws IOException, InterruptedException {
         runFus(new String[]{path});

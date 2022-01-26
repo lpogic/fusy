@@ -12,12 +12,18 @@ import java.util.function.Consumer;
 
 public class FusyUnix implements Fusy {
 
+
+    @Override
+    public void localRunFus(String fus) throws IOException, InterruptedException {
+        runFus(fus.split("(?<!\\\\) "));
+    }
+
     @Override
     public void runFus(String[] args) throws IOException, InterruptedException {
         var fus = new File(args[0]);
         var debugger = new FusDebugger();
         var program = debugger.process(fus.getPath());
-        var output = new FileOutputStream(javaHome + "/fusy.java");
+        var output = new FileOutputStream(home + "/fusy.java");
         var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
         writer.write(program.in(FusDebugger.Result.CODE).asString());
         writer.flush();
@@ -25,11 +31,11 @@ public class FusyUnix implements Fusy {
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
         if("graphic".equals(program.in(FusDebugger.Result.SETUP).asString()) && System.console() == null) {
-            cmd.add(javaHome + "/bin/javaw");
+            cmd.add(home + "/bin/javaw");
         } else {
-            cmd.add(javaHome + "/bin/java");
+            cmd.add(home + "/bin/java");
         }
-        cmd.add(javaHome + "/fusy.java");
+        cmd.add(home + "/fusy.java");
         cmd.addAll(List.of(args));
         Process process = pb.
                 command(cmd).
@@ -44,7 +50,7 @@ public class FusyUnix implements Fusy {
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
         cmd.add("less");
-        cmd.add(javaHome + "/fusy.java");
+        cmd.add(home + "/fusy.java");
         Process process = pb.
                 command(cmd).
                 directory(new File(".")).
@@ -56,7 +62,7 @@ public class FusyUnix implements Fusy {
     public FusyThread chooseFile(Consumer<String> fileConsumer) {
         return run(() -> {
             try {
-                var process = shell(Path.of(javaHome, "rsc", "sh", "chooseFile.sh").toString());
+                var process = shell(Path.of(home, "rsc", "sh", "chooseFile.sh").toString());
                 var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
                 if ("OK".equals(br.readLine())) {
                     fileConsumer.accept(br.readLine());
@@ -69,7 +75,7 @@ public class FusyUnix implements Fusy {
     }
 
     public String chooseFile() throws IOException, InterruptedException {
-        var process = shell(Path.of(javaHome, "rsc", "sh", "chooseFile.sh").toString());
+        var process = shell(Path.of(home, "rsc", "sh", "chooseFile.sh").toString());
         var br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         process.waitFor();
         if("OK".equals(br.readLine())) {

@@ -173,4 +173,8 @@ public interface Common {
     static <T> Sequence<T> pull(Supplier<T> supplier) {
         return Sequence.pull(supplier);
     }
+
+    static void hitException(Exception e) {
+        e.printStackTrace();
+    }
 }

@@ -361,6 +361,14 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.INSTANCEOF);
                             state.push(State.FUSY_TYPE);
                         }
+                        case '!' -> {
+                            result.append(" != null ");
+                            state.pop();
+                        }
+                        case '/' -> {
+                            result.append(" == null ");
+                            state.pop();
+                        }
                         case '@' -> {
                             result.append("Fus.this");
                             state.pop();
@@ -391,24 +399,21 @@ public class FusBodyProcessor extends FusProcessor {
                             state.pop();
                             state.push(State.AT_CAST);
                         }
-//                        case '@' -> {
-//                            state.pop();
-//                            state.push(State.AFTER_ID);
-//                            state.push(State.EXP_END);
-//                            state.push(State.EXP_END);
-//                            state.push(State.AT);
-//                            result.append("((").append(token.toString()).append(")(");
-//                        }
                         default -> {
+                            var str = token.toString();
                             if (Character.isJavaIdentifierStart(i)) {
                                 var fusDefinitionProcessor = new FusDefinitionProcessor(this);
-                                fusDefinitionProcessor.getReady(token.toString());
+                                fusDefinitionProcessor.getReady(str);
                                 subProcessor = fusDefinitionProcessor;
                                 state.pop();
-                                state.push(State.DEFINITION);
+                                if("language".equals(str)) {
+                                    state.push(State.INLINE_DEFINITION);
+                                } else {
+                                    state.push(State.DEFINITION);
+                                }
                                 return advance(i);
                             } else if (!Character.isWhitespace(i)) {
-                                result.append(token.toString()).append(".class");
+                                result.append(str).append(".class");
                                 state.pop();
                                 state.push(State.AFTER_ID);
                                 return advance(i);
@@ -487,6 +492,7 @@ public class FusBodyProcessor extends FusProcessor {
                             subProcessor = fusBodyProcessor;
                             state.pop();
                             state.push(State.AFTER_ID);
+                            state.push(State.DISCARD);
                             state.push(State.STATEMENT_VARIABLE);
                         }
                         default -> {
@@ -1251,7 +1257,7 @@ public class FusBodyProcessor extends FusProcessor {
                 case AFTER_TRY -> {
                     state.pop();
                     if(i != MANUAL_LF) {
-                        result.append("catch(Exception e){io.hitException(e);}");
+                        result.append("catch(Exception e){hitException(e);}");
                         if(i != '\n') return advance(i);
                     }
                 }
@@ -1954,6 +1960,9 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.AFTER_ID);
                             state.push(State.RAW_STRING);
                             result.append("\"");
+                        }
+                        case '.' -> {
+                            state.push(State.DOT);
                         }
                         case '\'' -> {
                             state.push(State.CHARACTER);

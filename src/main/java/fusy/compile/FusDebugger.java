@@ -4,13 +4,12 @@ import suite.suite.Subject;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 
 import static suite.suite.$uite.$;
 
 public class FusDebugger extends FusProcessor {
 
-    public String defaultPath = Fusy.javaHome;
+    public String defaultPath = Fusy.home;
 
     public enum Result {
         CODE, SETUP
@@ -133,6 +132,7 @@ public class FusDebugger extends FusProcessor {
                     @SuppressWarnings("unchecked")
                     class Fus extends Graphic {
                         public static void main(String[] args) throws Exception {
+                            Fus.args = Fusy.parseArgs(args);
                             var wallCnf = Suite.set();
                             wallCnf.put(Wall.class, new Fus());
                             wallCnf.put("w", 800);
@@ -142,8 +142,41 @@ public class FusDebugger extends FusProcessor {
                             Wall.play(wallCnf);
                         }
                         
+                        static Subject args;
+                        
                         public void setup() {
                         """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
+                    + "}\n" +
+                    $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
+                }
+                """;
+            case "daemon" -> """
+                import static fusy.setup.Common.*;
+                import fusy.Fusy;
+                import static fusy.compile.FusyFun.*;
+                import fusy.compile.FusyDrop;
+                import fusy.compile.FusySubjectBuilder;
+                import suite.suite.Suite;
+                import suite.suite.Subject;
+                import suite.suite.util.Series;
+                import suite.suite.util.Sequence;
+                import java.util.Objects;
+                import java.util.Arrays;
+                import fusy.setup.Daemon;
+                import static fusy.setup.Daemon.*;
+                """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
+                
+                @SuppressWarnings("unchecked")
+                class Fus extends Daemon {
+                    public static void main(String[] args) throws Exception {
+                        Fus.args = Fusy.parseArgs(args);
+                        new Fus();
+                    }
+                    
+                    static Subject args;
+                    
+                    Fus() throws Exception {
+                    """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                     + "}\n" +
                     $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
@@ -167,52 +200,18 @@ public class FusDebugger extends FusProcessor {
                 @SuppressWarnings("unchecked")
                 class Fus extends Console {
                     public static void main(String[] args) throws Exception {
-                        new Fus(args);
+                        Fus.args = Fusy.parseArgs(args);
+                        new Fus();
                     }
                     
-                    Fus(String[] args) throws Exception {
+                    static Subject args;
+                    
+                    Fus() throws Exception {
                     """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
                     + "}\n" +
                     $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
-            case "selenium" -> """
-                import static fusy.setup.Common.*;
-                import fusy.Fusy;
-                import static fusy.compile.FusyFun.*;
-                import fusy.compile.FusyDrop;
-                import fusy.compile.FusySubjectBuilder;
-                import suite.suite.Suite;
-                import suite.suite.Subject;
-                import suite.suite.util.Series;
-                import suite.suite.util.Sequence;
-                import java.util.Objects;
-                import java.util.Arrays;
-                import fusy.setup.Console;
-                import static fusy.setup.Console.*;
-                
-                import java.time.Duration;
-                                    
-                import org.openqa.selenium.By;
-                import org.openqa.selenium.WebDriver;
-                import org.openqa.selenium.WebElement;
-                import org.openqa.selenium.chrome.ChromeDriver;
-                """ + $program.in(FusBodyProcessor.Result.IMPORTS).asString() + """
-                
-                @SuppressWarnings("unchecked")
-                class Fus extends Console {
-                    public static void main(String[] args) throws Exception {
-                        new Fus(args);
-                    }
-                    
-                    Fus(String[] args) throws Exception {
-                    """ + $program.in(FusBodyProcessor.Result.STATEMENTS).asString()
-                    + "}\n" +
-                    $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
-                }
-                """;
-
-
 
             default -> throw new DebuggerException("Unsupported setup " + setup);
         };

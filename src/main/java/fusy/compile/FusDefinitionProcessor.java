@@ -14,7 +14,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, BUILD
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, BUILD, LANG, JAVA
     }
 
     enum Result {
@@ -310,7 +310,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case TYPE, BODY, INLINE_BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN, METHOD_ARGUMENTS,
-                    INTERFACE_BODY, METHOD_BODY, RECORD_COMPONENTS -> subProcessor.advance(i);
+                    INTERFACE_BODY, METHOD_BODY, RECORD_COMPONENTS, JAVA -> subProcessor.advance(i);
             case BACKSLASH -> {
                 if(i == '\\') {
                     state.pop();
@@ -423,6 +423,28 @@ public class FusDefinitionProcessor extends FusProcessor {
                     return advance(i);
                 }
             }
+            case LANG -> {
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case '\n' -> {
+                        var str = result.toString().trim();
+                        switch (str) {
+                            case "java" -> {
+                                var fusyJavaProcessor = new FusyJavaProcessor(this);
+                                fusyJavaProcessor.getReady();
+                                subProcessor = fusyJavaProcessor;
+                                state.push(State.JAVA);
+                            }
+                            case "fusy" -> {
+                                result = new StringBuilder();
+                                parentProcessor.terminateSubProcess();
+                            }
+                        }
+                    }
+                    default -> result.appendCodePoint(i);
+                }
+
+            }
         }
         return 0;
     }
@@ -491,6 +513,13 @@ public class FusDefinitionProcessor extends FusProcessor {
                 result.append(stats);
                 state.pop();
                 state.push(State.HEADER);
+            }
+            case JAVA -> {
+                var $ = subProcessor.finish();
+                String code = $.in(FusyJavaProcessor.Result.COMPLETE).asString();
+                result = new StringBuilder();
+                result.append(code);
+                parentProcessor.terminateSubProcess();
             }
         }
     }
@@ -568,6 +597,9 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
                 state.pop();
                 state.push(State.RESOURCE_HEADER);
+            }
+            case "language" -> {
+                state.push(State.LANG);
             }
             default -> {
                 if(isPublic) result.append("public ");
