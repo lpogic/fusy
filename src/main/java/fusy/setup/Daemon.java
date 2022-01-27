@@ -17,15 +17,6 @@ import java.util.function.BiFunction;
 
 
 public class Daemon implements Common {
-    public static final Fusy os = Fusy.local;
-    public static final FusyFiles files = new FusyFiles();
-    public static final FusyAlgorithm alg = new FusyAlgorithm();
-
-    public static void hold(long ms) {
-        try {
-            Thread.sleep(ms);
-        } catch (InterruptedException ignored) {}
-    }
 
     public static InputStreamReader inputUrl(String path) {
         try {

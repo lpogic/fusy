@@ -1311,7 +1311,6 @@ public class FusBodyProcessor extends FusProcessor {
                         result.appendCodePoint(i);
                     } else if (i == '\\') {
                         state.push(State.STR_BACKSLASH);
-                        result.appendCodePoint(i);
                     } else {
                         result.appendCodePoint(i);
                     }

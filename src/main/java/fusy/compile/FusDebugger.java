@@ -140,6 +140,7 @@ public class FusDebugger extends FusProcessor {
                             wallCnf.put("title", "Fusy window");
                             
                             Wall.play(wallCnf);
+                            try{System.in.close();}catch(Exception $e){}
                         }
                         
                         static Subject args;
@@ -171,6 +172,7 @@ public class FusDebugger extends FusProcessor {
                     public static void main(String[] args) throws Exception {
                         Fus.args = Fusy.parseArgs(args);
                         new Fus();
+                        try{System.in.close();}catch(Exception $e){}
                     }
                     
                     static Subject args;
@@ -202,6 +204,7 @@ public class FusDebugger extends FusProcessor {
                     public static void main(String[] args) throws Exception {
                         Fus.args = Fusy.parseArgs(args);
                         new Fus();
+                        try{System.in.close();}catch(Exception $e){}
                     }
                     
                     static Subject args;

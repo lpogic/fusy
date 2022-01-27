@@ -2,18 +2,22 @@ package fusy;
 
 import fusy.compile.FusDebugger;
 import fusy.compile.FusyThread;
+import fusy.setup.ChildProcess;
+import fusy.setup.FusyInOut;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 public class FusyWindows implements Fusy {
 
-    public void localRunFus(String args) throws IOException, InterruptedException {
+    public String[] parseProgramCall(String args) {
         var m = Pattern.compile("(?:\"(.*?)\"|(\\S+))\\s*").matcher(args);
         var a = new ArrayList<String>();
         while(m.find()) {
@@ -21,7 +25,7 @@ public class FusyWindows implements Fusy {
             if(g == null) g = m.group(2);
             a.add(g);
         }
-        local.runFus(a.toArray(new String[0]));
+        return a.toArray(new String[0]);
     }
 
     @Override
@@ -57,6 +61,44 @@ public class FusyWindows implements Fusy {
                 inheritIO().
                 start();
         process.waitFor();
+    }
+
+    @Override
+    public ChildProcess runFusApart(String[] args) throws IOException {
+        var fus = new File(args[0]);
+        var debugger = new FusDebugger();
+        var program = debugger.process(fus.getPath());
+        var output = new FileOutputStream(home + "\\fusy.java");
+        var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+        writer.write(program.in(FusDebugger.Result.CODE).asString());
+        writer.flush();
+        output.close();
+        var pb = new ProcessBuilder();
+        var cmd = new ArrayList<String>();
+        var setup = program.in(FusDebugger.Result.SETUP).asString();
+        cmd.add("cmd");
+        cmd.add("/c");
+        if(("graphic".equals(setup) || "daemon".equals(setup)) && System.console() == null) {
+            cmd.add(home + "\\bin\\javaw.exe");
+        } else {
+            cmd.add(home + "\\bin\\java.exe");
+        }
+        var cp = debugger.getClasspath();
+        if(!cp.isEmpty()) {
+            cmd.add("-classpath");
+            cmd.add(cp);
+        }
+        cmd.add(home + "\\fusy.java");
+        cmd.addAll(List.of(args));
+
+        Process process = pb.
+                command(cmd).
+                directory(fus.getParentFile()).
+                redirectErrorStream(true).
+                start();
+
+        var out = new PrintStream(process.getOutputStream(), true);
+        return new ChildProcess(process, new FusyInOut(new Scanner(process.getInputStream()), out, out));
     }
 
     @Override

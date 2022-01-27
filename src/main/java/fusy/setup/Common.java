@@ -1,9 +1,11 @@
 package fusy.setup;
 
+import fusy.Fusy;
 import fusy.Repeater;
 import suite.suite.util.Sequence;
 
 import java.util.Iterator;
+import java.util.Scanner;
 import java.util.function.Supplier;
 
 public interface Common {
@@ -80,6 +82,17 @@ public interface Common {
                 }
             };
         }
+    }
+
+    FusyInOut io = new FusyInOut(System.in != null ? new Scanner(System.in) : null, System.out, System.err);
+    Fusy os = Fusy.local;
+    FusyFiles files = new FusyFiles();
+    FusyAlgorithm alg = new FusyAlgorithm();
+
+    static void hold(long ms) {
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ignored) {}
     }
 
     static <T> T idle(T t) {

@@ -6,12 +6,12 @@ import java.util.Scanner;
 public record FusyInOut (Scanner scanner, PrintStream printer, PrintStream errPrinter) {
 
     public String readln() {
-        return scanner.nextLine();
+        return scanner != null ? scanner.nextLine() : "";
     }
 
     public String readln(String prompt) {
         printer.print(prompt);
-        return scanner.nextLine();
+        return readln();
     }
 
     public void print(Object o) {
@@ -36,5 +36,9 @@ public record FusyInOut (Scanner scanner, PrintStream printer, PrintStream errPr
 
     public void hitException(Exception e) {
         errPrinter.println(e.getMessage());
+    }
+
+    public void silenceErr() {
+        errPrinter.close();
     }
 }

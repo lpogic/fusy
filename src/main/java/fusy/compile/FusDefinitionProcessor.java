@@ -14,7 +14,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, BUILD, LANG, JAVA
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, SINGLETON_BODY, BUILD, LANG, JAVA
     }
 
     enum Result {
@@ -310,7 +310,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 }
             }
             case TYPE, BODY, INLINE_BODY, ENUM_OPTION_CSTR, ENUM_BODY, FUSY_FUN, METHOD_ARGUMENTS,
-                    INTERFACE_BODY, METHOD_BODY, RECORD_COMPONENTS, JAVA -> subProcessor.advance(i);
+                    INTERFACE_BODY, METHOD_BODY, RECORD_COMPONENTS, JAVA, SINGLETON_BODY -> subProcessor.advance(i);
             case BACKSLASH -> {
                 if(i == '\\') {
                     state.pop();
@@ -376,6 +376,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                     }
                     case '%' -> result.append(getDebugger().defaultPath).append(File.separator);
                     case '/' -> result.append(File.separator);
+                    case '<' -> state.push(State.BEAK);
                     default -> result.appendCodePoint(i);
                 }
             }
@@ -416,10 +417,12 @@ public class FusDefinitionProcessor extends FusProcessor {
                             .append(token)
                             .append("(); public class $")
                             .append(token)
-                            .append("{\n");
+                            .append("{ public $")
+                            .append(token)
+                            .append("()");
                     subProcessor = new FusBodyProcessor(this);
                     subProcessor.getReady();
-                    state.push(State.BODY);
+                    state.push(State.SINGLETON_BODY);
                     return advance(i);
                 }
             }
@@ -484,6 +487,17 @@ public class FusDefinitionProcessor extends FusProcessor {
                 parentProcessor.terminateSubProcess();
                 state.push(State.TERMINATED);
             }
+            case SINGLETON_BODY -> {
+                var $ = subProcessor.finish();
+                String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
+                String defs = $.in(FusBodyProcessor.Result.DEFINITIONS).asString();
+                result.append("{").append(stats).append("}");
+                result.append(defs).append("}");
+                String imps = $.in(FusBodyProcessor.Result.IMPORTS).asString();
+                imports.add(imps);
+                parentProcessor.terminateSubProcess();
+                state.push(State.TERMINATED);
+            }
             case ENUM_OPTION_CSTR -> {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
@@ -500,7 +514,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 var $ = subProcessor.finish();
                 String stats = $.in(FusBodyProcessor.Result.STATEMENTS).asString();
                 result.append(stats).append(")");
-                if(throwing) result.append("throws Throwable");
+                if(throwing) result.append("throws Exception");
                 subProcessor = new FusBodyProcessor(this);
                 subProcessor.getReady();
                 state.pop();

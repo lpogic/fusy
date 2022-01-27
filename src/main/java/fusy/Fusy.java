@@ -2,17 +2,15 @@ package fusy;
 
 import fusy.compile.DebuggerException;
 import fusy.compile.FusyThread;
+import fusy.setup.ChildProcess;
 import suite.suite.Subject;
 import suite.suite.Suite;
 import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 
 import java.io.*;
-import java.net.Socket;
 import java.util.Scanner;
-import java.util.ArrayList;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 public interface Fusy {
 
@@ -55,7 +53,7 @@ public interface Fusy {
                     }
                     default -> {
                         try {
-                            local.localRunFus(str);
+                            local.runFus(local.parseProgramCall(str));
                         }
                         catch (DebuggerException de) {
                             System.err.println(de.getMessage());
@@ -101,8 +99,9 @@ public interface Fusy {
         return r;
     }
 
-    void localRunFus(String fus) throws IOException, InterruptedException;
+    String[] parseProgramCall(String fus);
     void runFus(String[] args) throws IOException, InterruptedException;
+
     default void runFus(String path) throws IOException, InterruptedException {
         runFus(new String[]{path});
     }
@@ -111,6 +110,18 @@ public interface Fusy {
         a[0] = path;
         System.arraycopy(args, 0, a, 1, args.length);
         runFus(a);
+    }
+
+    ChildProcess runFusApart(String[] args) throws IOException, InterruptedException;
+
+    default ChildProcess runFusApart(String path) throws IOException, InterruptedException {
+        return runFusApart(new String[]{path});
+    }
+    default ChildProcess runFusApart(String path, String ... args) throws IOException, InterruptedException {
+        var a = new String[args.length + 1];
+        a[0] = path;
+        System.arraycopy(args, 0, a, 1, args.length);
+        return runFusApart(a);
     }
 
     default FusyThread run(Runnable callback) {

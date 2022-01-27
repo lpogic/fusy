@@ -2,20 +2,24 @@ package fusy;
 
 import fusy.compile.FusDebugger;
 import fusy.compile.FusyThread;
+import fusy.setup.ChildProcess;
+import fusy.setup.FusyInOut;
 
 import java.io.*;
+import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Scanner;
 import java.util.function.Consumer;
 
 public class FusyUnix implements Fusy {
 
 
     @Override
-    public void localRunFus(String fus) throws IOException, InterruptedException {
-        runFus(fus.split("(?<!\\\\) "));
+    public String[] parseProgramCall(String fus) {
+        return fus.split("(?<!\\\\) ");
     }
 
     @Override
@@ -43,6 +47,35 @@ public class FusyUnix implements Fusy {
                 inheritIO().
                 start();
         process.waitFor();
+    }
+
+    @Override
+    public ChildProcess runFusApart(String[] args) throws IOException {
+        var fus = new File(args[0]);
+        var debugger = new FusDebugger();
+        var program = debugger.process(fus.getPath());
+        var output = new FileOutputStream(home + "/fusy.java");
+        var writer = new OutputStreamWriter(output, StandardCharsets.UTF_8);
+        writer.write(program.in(FusDebugger.Result.CODE).asString());
+        writer.flush();
+        output.close();
+        var pb = new ProcessBuilder();
+        var cmd = new ArrayList<String>();
+        if("graphic".equals(program.in(FusDebugger.Result.SETUP).asString()) && System.console() == null) {
+            cmd.add(home + "/bin/javaw");
+        } else {
+            cmd.add(home + "/bin/java");
+        }
+        cmd.add(home + "/fusy.java");
+        cmd.addAll(List.of(args));
+
+        Process process = pb.
+                command(cmd).
+                directory(fus.getParentFile()).
+                start();
+
+        var out = new PrintStream(process.getOutputStream(), true);
+        return new ChildProcess(process, new FusyInOut(new Scanner(process.getInputStream()), out, out));
     }
 
     @Override
