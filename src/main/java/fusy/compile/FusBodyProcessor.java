@@ -2,6 +2,7 @@ package fusy.compile;
 
 import suite.suite.Subject;
 
+import java.io.File;
 import java.util.Stack;
 
 import static suite.suite.$uite.$;
@@ -19,7 +20,7 @@ public class FusBodyProcessor extends FusProcessor {
         TRY_ID, TRY_SCOPE_EXP, AID_DOT, EXTENDS_AFTER_TYPE, EXTENDS_AFTER_EXP,
         HASH_EXP, DOT, NEW, NEW_ARRAY, AFTER_NEW_ARRAY, NEW_AFTER_TYPE, INSTANCEOF, INSTANCEOF_ID,
         CATCH_VAR_ID, AFTER_TRY, AFTER_IF, AFTER_CASE, AFTER_SWITCH, BEFORE_PIN, PIN,
-        BEFORE_ARG_TYPE, ARG_TYPE, AFTER_ARG_TYPE, BEFORE_ARG_NAME, ARG_NAME
+        BEFORE_ARG_TYPE, ARG_TYPE, AFTER_ARG_TYPE, BEFORE_ARG_NAME, ARG_NAME, IMPORT, IMPORT_BACKSLASH
     }
 
     enum Result {
@@ -1057,6 +1058,11 @@ public class FusBodyProcessor extends FusProcessor {
                                 state.push(State.LAMBDA_EXP);
                                 return advance(i);
                             }
+                            case "import" -> {
+                                token = new StringBuilder();
+                                state.pop();
+                                state.push(State.IMPORT);
+                            }
                             default -> {
                                 state.pop();
                                 state.push(State.AFTER_ID);
@@ -1250,6 +1256,34 @@ public class FusBodyProcessor extends FusProcessor {
                         return advance(i);
                     }
                 }
+                case IMPORT -> {
+                    switch (i) {
+                        case '\\' -> state.push(State.IMPORT_BACKSLASH);
+                        case '}' -> {
+                            var str = token.toString().trim().replace((char)0x7F, ' ');
+                            if(str.contains(".")) {
+                                getDebugger().pushSource(str);
+                            } else {
+                                getDebugger().pushSource(getDebugger().defaultPath + File.separator +
+                                        "rsc" + File.separator + "fusy" + File.separator + str + ".fus");
+                            }
+                            state.pop();
+                        }
+                        case '%' -> token.append(getDebugger().defaultPath).append(File.separator);
+                        case '/' -> token.append(File.separator);
+                        default -> token.appendCodePoint(i);
+                    }
+                }
+                case IMPORT_BACKSLASH -> {
+                    if (i == '}' || i == '\\' || i == '/' || i == '%') {
+                        token.append(i);
+                    } else if(i == ' ') {
+                        token.appendCodePoint(0x7F);
+                    } else {
+                        token.append('\\').appendCodePoint(i);
+                    }
+                    state.pop();
+                }
                 case AFTER_IF, AFTER_CASE, AFTER_SWITCH -> {
                         state.pop();
                         if(i != '\n' && i != MANUAL_LF) return advance(i);
@@ -1281,7 +1315,13 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.CB_EXP);
                         }
                         case '\n' -> state.push(State.STR_ENDLINE);
-                        default -> result.appendCodePoint(i);
+                        default -> {
+                            if(i < 128) {
+                                result.appendCodePoint(i);
+                            } else {
+                                result.append(String.format("\\u%04x", i));
+                            }
+                        }
                     }
                 }
                 case STRING_END -> {
@@ -1294,25 +1334,36 @@ public class FusBodyProcessor extends FusProcessor {
                     result.append(")+\"");
                 }
                 case RAW_STRING -> {
-                    if(i == '"') {
-                        state.push(State.STRING);
-                    } else if(i == '`') {
-                        result.append("\"");
-                        state.pop();
-                    } else if(i == '\\') {
-                        result.append("\\\\");
-                    } else {
-                        result.appendCodePoint(i);
+                    switch (i) {
+                        case '"' -> state.push(State.STRING);
+                        case '`' -> {
+                            result.append("\"");
+                            state.pop();
+                        }
+                        case '\\' -> result.append("\\\\");
+                        default -> {
+                            if(i < 128) {
+                                result.appendCodePoint(i);
+                            } else {
+                                result.append(String.format("\\u%04x", i));
+                            }
+                        }
                     }
                 }
                 case CHARACTER -> {
-                    if (i == '\'') {
-                        state.pop();
-                        result.appendCodePoint(i);
-                    } else if (i == '\\') {
-                        state.push(State.STR_BACKSLASH);
-                    } else {
-                        result.appendCodePoint(i);
+                    switch (i) {
+                        case '\'' -> {
+                            result.appendCodePoint(i);
+                            state.pop();
+                        }
+                        case '\\' -> state.push(State.STR_BACKSLASH);
+                        default -> {
+                            if(i < 128) {
+                                result.appendCodePoint(i);
+                            } else {
+                                result.append(String.format("\\u%04x", i));
+                            }
+                        }
                     }
                 }
                 case STR_BACKSLASH -> {

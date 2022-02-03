@@ -79,6 +79,11 @@ public class FusyUnix implements Fusy {
     }
 
     @Override
+    public String stdinCharset() {
+        return "UTF8";
+    }
+
+    @Override
     public void showLastCompiledSource() throws IOException, InterruptedException {
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
@@ -120,5 +125,36 @@ public class FusyUnix implements Fusy {
 
     private Process shell(String file) throws IOException {
         throw new RuntimeException("TODO Shell scripts");
+    }
+
+    @Override
+    public ChildProcess cmdApart(String cmd) throws IOException {
+        var pb = new ProcessBuilder();
+        var c = List.of(cmd.split(" +"));
+
+        Process process = pb.
+                command(c).
+                redirectErrorStream(true).
+                start();
+
+        var out = new PrintStream(process.getOutputStream(), true);
+        return new ChildProcess(process, new FusyInOut(new Scanner(process.getInputStream()), out, out));
+    }
+
+    @Override
+    public void cmd(String cmd) throws IOException, InterruptedException {
+        var pb = new ProcessBuilder();
+        var c = List.of(cmd.split(" +"));
+
+        Process process = pb.
+                command(c).
+                inheritIO().
+                start();
+        process.waitFor();
+    }
+
+    @Override
+    public void cleanConsole() throws IOException, InterruptedException {
+        cmd("clear");
     }
 }

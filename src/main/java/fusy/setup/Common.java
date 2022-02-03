@@ -2,7 +2,10 @@ package fusy.setup;
 
 import fusy.Fusy;
 import fusy.Repeater;
+import suite.suite.Subject;
+import suite.suite.Suite;
 import suite.suite.util.Sequence;
+import suite.suite.util.Series;
 
 import java.util.Iterator;
 import java.util.Scanner;
@@ -84,7 +87,7 @@ public interface Common {
         }
     }
 
-    FusyInOut io = new FusyInOut(System.in != null ? new Scanner(System.in) : null, System.out, System.err);
+    FusyInOut io = new FusyInOut(System.in != null ? new Scanner(System.in, Fusy.local.stdinCharset()) : null, System.out, System.err);
     Fusy os = Fusy.local;
     FusyFiles files = new FusyFiles();
     FusyAlgorithm alg = new FusyAlgorithm();
@@ -185,6 +188,28 @@ public interface Common {
 
     static <T> Sequence<T> pull(Supplier<T> supplier) {
         return Sequence.pull(supplier);
+    }
+
+    static boolean random(double chance) {
+        return Math.random() < chance;
+    }
+
+    static int random(int limit) {
+        return (int)(Math.random() * (limit + 1));
+    }
+
+    static Subject random(Subject s) {
+        return s.select((int)Math.floor(Math.random() * s.size()));
+    }
+
+    static Series random(Subject s, boolean repetitions) {
+        if(repetitions) return Series.pull(() -> random(s));
+        var options = Suite.alter(s);
+        return Series.pull(() -> {
+            var o = random(options);
+            options.unset(o.raw());
+            return o;
+        });
     }
 
     static void hitException(Exception e) {

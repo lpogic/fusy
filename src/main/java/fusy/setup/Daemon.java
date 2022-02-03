@@ -104,22 +104,4 @@ public class Daemon implements Common {
         }
         return min;
     }
-
-    public static boolean random(double chance) {
-        return Math.random() < chance;
-    }
-
-    public static Subject random(Subject s) {
-        return s.select((int)Math.floor(Math.random() * s.size()));
-    }
-
-    public static Series random(Subject s, boolean repetitions) {
-        if(repetitions) return Series.pull(() -> random(s));
-        var options = Suite.alter(s);
-        return Series.pull(() -> {
-            var o = random(options);
-            options.unset(o.raw());
-            return o;
-        });
-    }
 }

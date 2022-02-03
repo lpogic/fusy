@@ -1,8 +1,5 @@
 package fusy.setup;
 
-import java.util.*;
-
-
 public class Console extends Daemon {
 
     public static void pause() {

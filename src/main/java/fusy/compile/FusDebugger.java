@@ -35,15 +35,21 @@ public class FusDebugger extends FusProcessor {
     }
 
     public void pushSource(String source) {
-        if (sources.present(source))
-            throw new DebuggerException(source + " EXCEPTION AT LINE " + lineCounter + ": cyclic insert " + source);
+        var file = (File)null;
+        if(!source.matches("^\\w+:.+") && sources.present()) {
+            var currFile = sources.as(File.class);
+            file = new File(currFile.getParentFile(), source);
+        } else {
+            file = new File(source);
+        }
+        if (sources.present(file))
+            throw new DebuggerException(file + " EXCEPTION AT LINE " + lineCounter + ": cyclic insert " + file);
         try {
-            var file = new File(source);
             var fis = new FileInputStream(file);
             var reader = new BufferedReader(new InputStreamReader(fis, StandardCharsets.UTF_8));
-            sources.aimedPut(sources.raw(), source, reader);
+            sources.aimedPut(sources.raw(), file, reader);
         } catch (FileNotFoundException e) {
-            throw new DebuggerException(source + " EXCEPTION AT LINE " + lineCounter + ": insert " + source + " not found");
+            throw new DebuggerException(file + " EXCEPTION AT LINE " + lineCounter + ": insert " + file + " not found");
         }
     }
 
@@ -218,6 +224,15 @@ public class FusDebugger extends FusProcessor {
 
             default -> throw new DebuggerException("Unsupported setup " + setup);
         };
+
+        for(var fis : sources.eachIn().each(BufferedReader.class)) {
+            try {
+                fis.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         return $(Result.CODE, $(program),
                 Result.SETUP, $(setup));
     }

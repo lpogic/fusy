@@ -1,17 +1,17 @@
 @build classpath %lib/selenium.jar
 @import java.time.Duration
 
-@import org.openqa.selenium.By
-@import org.openqa.selenium.Keys
-@import org.openqa.selenium.WebDriver
-@import org.openqa.selenium.WebElement
+@import org.openqa.selenium.*
+@import org.openqa.selenium.interactions.Actions
+@import org.openqa.selenium.support.locators.RelativeLocator
 @import org.openqa.selenium.support.ui.Select
 @import org.openqa.selenium.chrome.ChromeDriver
 @import org.openqa.selenium.chrome.ChromeOptions
 
 @WebDriver driver
+@WebDriver driver() > driver <
 
-@void webDriver(String type)
+@void setDriver(String type)
   switch type
     case .chrome
       System:setProperty("webdriver.chrome.driver", Fusy.home + `\bin\chromedriver.exe`)
@@ -22,7 +22,7 @@
 
 @boolean checkFlag(Subject s, Object f) return s:present(f) && s:in(f):orGiven(true) <
 
-@void webDriver(Subject params)
+@void setDriver(Subject params)
   switch #type(params:.type:asString)
     case .chrome
       System:setProperty("webdriver.chrome.driver", params:.location:orGiven(Fusy.home + `\bin\chromedriver.exe`))
@@ -32,6 +32,10 @@
       if params:present(.timeout), globalTimeout(params:.timeout:long)
     rest drop "unsupported web driver {type}"
   <
+<
+
+@void close()
+  driver:quit
 <
 
 @void globalTimeout(long ms)
@@ -53,3 +57,15 @@
 <
 
 @WebElement getActive() > driver:switchTo:activeElement <
+
+@WebElement findOneText(String text)
+  try, return driver.findElement(By.partialLinkText(text)) catch, return null
+<
+
+@/keyDown(Keys key)
+  new Actions(driver):keyDown(key):perform
+<
+
+@/keyUp(Keys key)
+  new Actions(driver):keyUp(key):perform
+<
