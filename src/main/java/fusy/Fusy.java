@@ -31,35 +31,6 @@ public interface Fusy {
     }
 
     static void main(String[] args) {
-//        try {
-//            var hr = HttpRequest.newBuilder(new URI("https://allegro.pl/auth/oauth/token?grant_type=client_credentials"))
-//                    .GET()
-//                    .build();
-//            var hc = HttpClient.newBuilder()
-//                    .authenticator(new Authenticator() {
-//                        @Override
-//                        protected PasswordAuthentication getPasswordAuthentication() {
-//                            return new PasswordAuthentication(
-//                                    "b21e63ebbb53401db78a4d462bd37bf9",
-//                                    "Z749VJVqXaJQWw4nQ1zm9eXWBcB3HtQH6iLiIaPawTF7ZPXkfr1FNbI2sqhoKQMF".toCharArray()
-//                            );
-//                        }
-//                    })
-//                    .build()
-//                    .send(hr, HttpResponse.BodyHandlers.ofString());
-//            var hr = HttpRequest.newBuilder(new URI("https://api.allegro.pl/sale/offers?name=pierniki"))
-//                    .header("Authorization", "Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzY29wZSI6WyJhbGxlZ3JvOmFwaTpzYWxlOm9mZmVyczpyZWFkIl0sImFsbGVncm9fYXBpIjp0cnVlLCJleHAiOjE2NDM3NTEyMTcsImp0aSI6ImIwNzU4Y2JlLWI5ZmMtNDRhZi1hODMxLTViOWExMmU0MGJmNSIsImNsaWVudF9pZCI6ImIyMWU2M2ViYmI1MzQwMWRiNzhhNGQ0NjJiZDM3YmY5In0.j-zB3aqVmZsN_7TR1ZCkl93C8Do36fN-gqliNV7oGkW2xnEdU7TuomwfIbLyGRjpiAK72Ao7ix5RcKZjYqh4oGEW5OZHC9VnfUwfvL6pR_hoekH5_9OsWr7zXErYbz9o-1PqRCdAf33acMDYrE4zcsaW1O1PtULveC66wfeTDRQybUtrD4Ni28XrRnx5_hJrEST1koswAgjPA69tlB0Mb-LzcSdy89Sr66nRqLWoz8p97AYQW9L52ChL9iL_as7qqr3o66e2oqTiZWymp87og7n0-WD8zOdiJWnSGhaqybZ7J11fLo5YSY4VM4swQcQ3z4xHoltZWp0H-djFE8wX1A")
-//                    .header("Accept", "application/vnd.allegro.public.v1+json")
-//                    .GET()
-//                    .build();
-//            var hc = HttpClient.newBuilder()
-//                    .build()
-//                    .send(hr, HttpResponse.BodyHandlers.ofString());
-//            System.out.println(hc.body());
-//            System.out.println(hc.statusCode());
-//        } catch (URISyntaxException | IOException | InterruptedException e) {
-//            e.printStackTrace();
-//        }
 //        args = new String[]{"C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\skrypt.txt"}; //@Test
         if(args.length < 1) {
             Scanner scanner = new Scanner(System.in);
