@@ -9,12 +9,8 @@ import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 
 import java.io.*;
-import java.net.*;
-import java.net.http.HttpClient;
-import java.net.http.HttpResponse;
 import java.util.Scanner;
 import java.util.function.Consumer;
-import java.net.http.HttpRequest;
 
 public interface Fusy {
 

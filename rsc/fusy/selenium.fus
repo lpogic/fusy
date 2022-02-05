@@ -56,6 +56,24 @@
   return []:setEntire(driver.findElements(By.cssSelector(selector)))
 <
 
+@WebElement findOne(WebElement parent, String selector)
+  try, return parent.findElement(By.cssSelector(selector)) catch, return null
+<
+
+@WebElement findOne(WebElement parent, String selector, boolean displayedOnly)
+  #e = findOne(parent, selector)
+  if !displayedOnly || e @/, return e
+  return e:isDisplayed ? e !! null
+<
+
+@Subject find(WebElement parent, String selector)
+  return []:setEntire(parent.findElements(By.cssSelector(selector)))
+<
+
+@WebElement parent(WebElement child)
+  return child:findElement(By:xpath("./.."))
+<
+
 @WebElement getActive() > driver:switchTo:activeElement <
 
 @WebElement findOneText(String text)

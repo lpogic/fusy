@@ -7,6 +7,7 @@ import suite.suite.Suite;
 import suite.suite.util.Sequence;
 import suite.suite.util.Series;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.function.Supplier;
@@ -210,6 +211,24 @@ public interface Common {
             options.unset(o.raw());
             return o;
         });
+    }
+
+    static void export(Appendable appendable, Subject subject) {
+        try {
+            Suite.export(subject, appendable, true, o -> {
+                if(o instanceof String s) return "\"" + s + "\"";
+                if(o instanceof Integer i) return "" + i;
+                if(o instanceof Long l) return "" + l + "L";
+                if(o instanceof Double d) return "" + d;
+                if(o instanceof Float f) return "" + f + "f";
+                if(o instanceof Boolean b) return "" + b;
+                if(o instanceof Character c) return "'" + c + "'";
+                if(o instanceof Suite.Auto) return "";
+                return "";
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     static void hitException(Exception e) {
