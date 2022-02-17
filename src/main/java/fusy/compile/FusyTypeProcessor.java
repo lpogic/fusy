@@ -56,15 +56,20 @@ public class FusyTypeProcessor extends FusProcessor {
     public int advance(int i) {
         switch (state.peek()) {
             case BEFORE -> {
-                if(i == '\\') {
-                    state.push(State.BACKSLASH);
-                } else if(i == '{') {
-                    subProcessor = new FusyFunProcessor(this);
-                    subProcessor.getReady();
-                    state.push(State.FUSY_FUN);
-                } else if(Character.isJavaIdentifierStart(i)) {
-                    result.appendCodePoint(i);
-                    state.push(State.ID);
+                switch (i) {
+                    case '\\' -> state.push(State.BACKSLASH);
+                    case '{' -> {
+                        subProcessor = new FusyFunProcessor(this);
+                        subProcessor.getReady();
+                        state.push(State.FUSY_FUN);
+                    }
+                    case '<' -> state.push(State.BEAK);
+                    default -> {
+                        if(Character.isJavaIdentifierStart(i)) {
+                            result.appendCodePoint(i);
+                            state.push(State.ID);
+                        }
+                    }
                 }
             }
             case FUSY_FUN, GENERIC -> subProcessor.advance(i);

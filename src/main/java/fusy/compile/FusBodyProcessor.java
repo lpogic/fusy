@@ -323,7 +323,7 @@ public class FusBodyProcessor extends FusProcessor {
                 case ES_AT -> {
                     switch (i) {
                         case '\\' -> state.push(State.BACKSLASH);
-                        case '+', '-', '~', '!', '*', '?', '/' -> {
+                        case '+', '-', '~', '!', '*', '?', '/', '<' -> {
                             subProcessor = new FusDefinitionProcessor(this);
                             subProcessor.getReady();
                             state.pop();
@@ -519,6 +519,7 @@ public class FusBodyProcessor extends FusProcessor {
                     if (Character.isJavaIdentifierStart(i)) {
                         token = new StringBuilder();
                         state.pop();
+                        state.push(State.AFTER_ID);
                         state.push(State.DOT_STRING);
                     } else {
                         result.append(".");
@@ -1377,15 +1378,8 @@ public class FusBodyProcessor extends FusProcessor {
                             result.append("`".repeat(tokenLength - counter)).append("\"");
                             return advance(i);
                         } else if(counter == tokenLength) {
-                            if(i == '{') {
-                                result.append("\"+(");
-                                state.push(State.RAW_STRING);
-                                state.push(State.STRCB_END);
-                                state.push(State.CB_EXP);
-                            } else {
-                                result.append("\"");
-                                return advance(i);
-                            }
+                            result.append("\"");
+                            return advance(i);
                         } else {
                             result.append(token);
                             state.push(State.RAW_STRING);
@@ -2058,9 +2052,7 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.RAW_STRING_IN);
                             counter = 1;
                         }
-                        case '.' -> {
-                            state.push(State.DOT);
-                        }
+                        case '.' -> state.push(State.DOT);
                         case '\'' -> {
                             state.push(State.CHARACTER);
                             result.appendCodePoint(i);

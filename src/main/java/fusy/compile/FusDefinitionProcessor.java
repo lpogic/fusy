@@ -631,9 +631,14 @@ public class FusDefinitionProcessor extends FusProcessor {
             case "language" -> state.push(State.LANG);
             default -> {
                 if(isPublic) result.append("public ");
+                isPublic = false;
                 result.append(complete).append(" ");
                 state.pop();
-                state.push(State.RESOURCE_HEADER);
+                if(complete.startsWith("<")) {
+                    state.push(State.BEFORE_TYPE);
+                } else {
+                    state.push(State.RESOURCE_HEADER);
+                }
             }
         }
     }
