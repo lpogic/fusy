@@ -87,3 +87,7 @@
 @/keyUp(Keys key)
   new Actions(driver):keyUp(key):perform
 <
+
+@Subject script(String script)
+  return [ @JavascriptExecutor(driver):executeScript(script) ]
+<

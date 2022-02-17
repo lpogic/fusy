@@ -14,7 +14,7 @@ public class FusDefinitionProcessor extends FusProcessor {
         ENUM_OPTION_CSTR, ENUM_BODY, BEAK, FUSY_FUN, INLINE_BODY,
         BACKSLASH, DOUBLE_BACKSLASH, SINGLE_LINE_COMMENT, MULTI_LINE_COMMENT, MLC_BACKSLASH, MLC_DOUBLE_BACKSLASH,
         RESOURCE_HEADER, METHOD_ARGUMENTS, INSERT, INTERFACE_HEADER, INTERFACE_BODY, TERMINATED, METHOD_BODY,
-        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, SINGLETON_BODY, BUILD, LANG, JAVA
+        RECORD_HEADER, RECORD_COMPONENTS, BEFORE_SINGLETON, SINGLETON, SINGLETON_ID, SINGLETON_BODY, BUILD, LANG, JAVA
     }
 
     enum Result {
@@ -401,11 +401,11 @@ public class FusDefinitionProcessor extends FusProcessor {
                 } else if(Character.isJavaIdentifierStart(i)) {
                     token = new StringBuilder();
                     state.pop();
-                    state.push(State.SINGLETON);
+                    state.push(State.SINGLETON_ID);
                     return advance(i);
                 }
             }
-            case SINGLETON -> {
+            case SINGLETON_ID -> {
                 if (Character.isJavaIdentifierPart(i)) {
                     token.appendCodePoint(i);
                 } else {
@@ -416,14 +416,30 @@ public class FusDefinitionProcessor extends FusProcessor {
                             .append(" = new $")
                             .append(token)
                             .append("(); public class $")
-                            .append(token)
-                            .append("{ public $")
+                            .append(token);
+                    state.pop();
+                    state.push(State.SINGLETON);
+                    return advance(i);
+                }
+            }
+            case SINGLETON -> {
+                if(i == '\\') {
+                    state.push(State.BACKSLASH);
+                } else if(i == '\n') {
+                    state.push(State.SINGLETON_BODY);
+                    result.append("{ public $")
                             .append(token)
                             .append("()");
                     subProcessor = new FusBodyProcessor(this);
                     subProcessor.getReady();
-                    state.push(State.SINGLETON_BODY);
-                    return advance(i);
+                } else if (i == '<') {
+                    state.push(State.BEAK);
+                } else if(i == '{') {
+                    subProcessor = new FusyFunProcessor(this);
+                    subProcessor.getReady();
+                    state.push(State.FUSY_FUN);
+                } else {
+                    result.appendCodePoint(i);
                 }
             }
             case LANG -> {
@@ -565,7 +581,7 @@ public class FusDefinitionProcessor extends FusProcessor {
             }
             case "insert" -> state.push(State.INSERT);
             case "build" -> state.push(State.BUILD);
-            case "singleton" -> state.push(State.BEFORE_SINGLETON);
+            case "case" -> state.push(State.BEFORE_SINGLETON);
             case "throws" -> throwing = true;
             case "default", "final", "native", "static", "strictfp", "transient", "volatile" -> {
                 result.append(complete).append(" ");
@@ -612,9 +628,7 @@ public class FusDefinitionProcessor extends FusProcessor {
                 state.pop();
                 state.push(State.RESOURCE_HEADER);
             }
-            case "language" -> {
-                state.push(State.LANG);
-            }
+            case "language" -> state.push(State.LANG);
             default -> {
                 if(isPublic) result.append("public ");
                 result.append(complete).append(" ");

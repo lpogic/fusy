@@ -42,7 +42,7 @@ public class FusyWindows implements Fusy {
         var setup = program.in(FusDebugger.Result.SETUP).asString();
         cmd.add("cmd");
         cmd.add("/c");
-        if(("graphic".equals(setup) || "daemon".equals(setup)) && System.console() == null) {
+        if(("graphic".equals(setup) || "robot".equals(setup)) && System.console() == null) {
             cmd.add(home + "\\bin\\javaw.exe");
         } else {
             cmd.add(home + "\\bin\\java.exe");
@@ -77,7 +77,7 @@ public class FusyWindows implements Fusy {
         var setup = program.in(FusDebugger.Result.SETUP).asString();
         cmd.add("cmd");
         cmd.add("/c");
-        if(("graphic".equals(setup) || "daemon".equals(setup)) && System.console() == null) {
+        if(("graphic".equals(setup) || "robot".equals(setup)) && System.console() == null) {
             cmd.add(home + "\\bin\\javaw.exe");
         } else {
             cmd.add(home + "\\bin\\java.exe");

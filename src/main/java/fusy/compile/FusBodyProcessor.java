@@ -1358,6 +1358,7 @@ public class FusBodyProcessor extends FusProcessor {
                             state.push(State.RAW_STRING_OUT);
                         }
                         case '\\' -> result.append("\\\\");
+                        case '"' -> result.append("\\\"");
                         default -> {
                             if(i < 128) {
                                 result.appendCodePoint(i);

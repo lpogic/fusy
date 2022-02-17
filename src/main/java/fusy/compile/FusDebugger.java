@@ -157,7 +157,7 @@ public class FusDebugger extends FusProcessor {
                     $program.in(FusBodyProcessor.Result.DEFINITIONS).asString() + """
                 }
                 """;
-            case "daemon" -> """
+            case "robot" -> """
                 import static fusy.setup.Common.*;
                 import fusy.Fusy;
                 import static fusy.compile.FusyFun.*;
