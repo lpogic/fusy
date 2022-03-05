@@ -42,24 +42,22 @@ public class FusyWindows implements Fusy {
         var setup = program.in(FusDebugger.Result.SETUP).asString();
         cmd.add("cmd");
         cmd.add("/c");
-        if(("graphic".equals(setup) || "robot".equals(setup)) && System.console() == null) {
+        if (("graphic".equals(setup) || "robot".equals(setup)) && System.console() == null) {
             cmd.add(home + "\\bin\\javaw.exe");
         } else {
             cmd.add(home + "\\bin\\java.exe");
         }
         var cp = debugger.getClasspath();
-        if(!cp.isEmpty()) {
+        if (!cp.isEmpty()) {
             cmd.add("-classpath");
             cmd.add(cp);
         }
+        if (debugger.assertionsEnabled()) {
+            cmd.add("-enableassertions");
+        }
         cmd.add(home + "\\fusy.java");
         cmd.addAll(List.of(args));
-        Process process = pb.
-                command(cmd).
-                directory(fus.getParentFile()).
-                inheritIO().
-                start();
-        process.waitFor();
+        pb.command(cmd).directory(fus.getParentFile()).inheritIO().start().waitFor();
     }
 
     @Override
@@ -87,6 +85,9 @@ public class FusyWindows implements Fusy {
             cmd.add("-classpath");
             cmd.add(cp);
         }
+        if(debugger.assertionsEnabled()) {
+            cmd.add("-enableassertions");
+        }
         cmd.add(home + "\\fusy.java");
         cmd.addAll(List.of(args));
 
@@ -106,7 +107,7 @@ public class FusyWindows implements Fusy {
     }
 
     @Override
-    public void showLastCompiledSource() throws IOException, InterruptedException {
+    public void showLastCompiledSource() {
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
         cmd.add("cmd");
@@ -114,12 +115,11 @@ public class FusyWindows implements Fusy {
         cmd.add("powershell");
         cmd.add("-command");
         cmd.add("\"start -verb edit '" + home + "\\fusy.java'\"");
-        Process process = pb.
-                command(cmd).
-                directory(new File(".")).
-                inheritIO().
-                start();
-        process.waitFor();
+        try {
+            pb.command(cmd).directory(new File(".")).inheritIO().start().waitFor();
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public FusyThread chooseFile(Consumer<String> fileConsumer) {
@@ -202,7 +202,11 @@ public class FusyWindows implements Fusy {
     }
 
     @Override
-    public void cleanConsole() throws IOException, InterruptedException {
-        cmd("cls");
+    public void cleanConsole() {
+        try {
+            cmd("cls");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

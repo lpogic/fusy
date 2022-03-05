@@ -1108,22 +1108,36 @@ public class FusBodyProcessor extends FusProcessor {
                     }
                 }
                 case NEW -> {
-                    if (i == '(') {
-                        subProcessor = new FusArrayProcessor(this);
-                        subProcessor.getReady();
-                        state.pop();
-                        state.push(State.AFTER_NEW_ARRAY);
-                        state.push(State.NEW_ARRAY);
-                        return advance(i);
-                    } else if (!Character.isWhitespace(i)) {
-                        state.pop();
-                        state.push(State.NEW_AFTER_TYPE);
-                        state.push(State.FUSY_TYPE);
-                        var fusyTypeProcessor = new FusyTypeProcessor(this);
-                        fusyTypeProcessor.getReady();
-                        fusyTypeProcessor.arrayTypeEnabled(false);
-                        subProcessor = fusyTypeProcessor;
-                        return advance(i);
+                    switch(i) {
+                        case '(' -> {
+                            subProcessor = new FusArrayProcessor(this);
+                            subProcessor.getReady();
+                            state.pop();
+                            state.push(State.AFTER_NEW_ARRAY);
+                            state.push(State.NEW_ARRAY);
+                            return advance(i);
+                        }
+                        case ':' -> {
+                            state.pop();
+                            state.push(State.NEW_AFTER_TYPE);
+                            state.push(State.FUSY_TYPE);
+                            var fusyTypeProcessor = new FusyTypeProcessor(this);
+                            fusyTypeProcessor.getReady();
+                            fusyTypeProcessor.arrayTypeEnabled(false);
+                            subProcessor = fusyTypeProcessor;
+                        }
+                        default -> {
+                            if (!Character.isWhitespace(i)) {
+                                state.pop();
+                                state.push(State.NEW_AFTER_TYPE);
+                                state.push(State.FUSY_TYPE);
+                                var fusyTypeProcessor = new FusyTypeProcessor(this);
+                                fusyTypeProcessor.getReady();
+                                fusyTypeProcessor.arrayTypeEnabled(false);
+                                subProcessor = fusyTypeProcessor;
+                                return advance(i);
+                            }
+                        }
                     }
                 }
                 case AFTER_NEW_ARRAY -> {
@@ -1145,8 +1159,12 @@ public class FusBodyProcessor extends FusProcessor {
                         state.push(State.DISCARD);
                         state.push(State.SCOPE_END);
                         state.push(State.CB_EXP);
-                    } else if (!Character.isWhitespace(i) || i == '\n') {
+                    } else if(i == '(') {
                         result.append(token.toString());
+                        state.pop();
+                        return advance(i);
+                    } else if (!Character.isWhitespace(i) || i == '\n') {
+                        result.append(token.toString()).append("()");
                         state.pop();
                         return advance(i);
                     }
@@ -1360,8 +1378,9 @@ public class FusBodyProcessor extends FusProcessor {
                         }
                         case '\\' -> result.append("\\\\");
                         case '"' -> result.append("\\\"");
+                        case '\n' -> result.append("\\n");
                         default -> {
-                            if(i < 128) {
+                            if(i < 128 && i > 31) {
                                 result.appendCodePoint(i);
                             } else {
                                 result.append(String.format("\\u%04x", i));

@@ -9,8 +9,10 @@ import suite.suite.util.Cascade;
 import suite.suite.util.Sequence;
 
 import java.io.*;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.function.Consumer;
+import sun.misc.Signal;
 
 public interface Fusy {
 
@@ -29,40 +31,32 @@ public interface Fusy {
     static void main(String[] args) {
 //        args = new String[]{"C:\\Users\\1\\Desktop\\PRO\\PRO_Java\\fusy\\skrypt.txt"}; //@Test
         if(args.length < 1) {
+            Signal.handle(new Signal("INT"), sig -> {});
             Scanner scanner = new Scanner(System.in);
+            String str = "";
             while(true) {
                 System.out.print("fusy> ");
-                String str = scanner.nextLine();
+                try {
+                    str = scanner.nextLine();
+                } catch (Exception e) {
+                    return;
+                }
                 switch (str.trim()) {
-                    case "" -> {}
+                    case "" -> {
+                    }
                     case "help" -> System.out.println("""
                             help - dostepne opcje
                             exit - wyjscie
                             last - wyświetla ostatni skompilowany program w trybie edycji
                             Inne napisy interpretowane sa jako sciezka do pliku ze skryptem i uruchamiane
                             """);
-                    case "exit" -> {
-                        return;
-                    }
-                    case "last" -> {
-                        try {
-                            local.showLastCompiledSource();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                    case "clean" -> {
-                        try {
-                            new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-                        } catch (IOException | InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                    }
+                    case "exit" -> System.exit(0);
+                    case "last" -> local.showLastCompiledSource();
+                    case "clean" -> local.cleanConsole();
                     default -> {
                         try {
                             local.runFus(local.parseProgramCall(str));
-                        }
-                        catch (DebuggerException de) {
+                        } catch (DebuggerException de) {
                             System.err.println(de.getMessage());
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -150,10 +144,10 @@ public interface Fusy {
 
     String stdinCharset();
 
-    void showLastCompiledSource() throws IOException, InterruptedException;
+    void showLastCompiledSource();
     FusyThread chooseFile(Consumer<String> fileConsumer);
     String chooseFile() throws IOException, InterruptedException;
     ChildProcess cmdApart(String cmd) throws IOException;
     void cmd(String cmd) throws IOException, InterruptedException;
-    void cleanConsole() throws IOException, InterruptedException;
+    void cleanConsole();
 }

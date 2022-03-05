@@ -213,6 +213,22 @@ public interface Common {
         });
     }
 
+    static Subject set(Object ... obs) {
+        var s = Suite.set();
+        for(var o : obs) {
+            s.fusySet(o);
+        }
+        return s;
+    }
+
+    static Subject list(Object ... obs) {
+        var s = Suite.set();
+        for(var o : obs) {
+            s.fusyAdd(o);
+        }
+        return s;
+    }
+
     static void export(Appendable appendable, Subject subject) {
         try {
             Suite.export(subject, appendable, true, o -> {

@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.function.BiFunction;
 
 
-public class Daemon implements Common {
+public class Robot implements Common {
 
     public static InputStreamReader inputUrl(String path) {
         try {
@@ -49,6 +49,10 @@ public class Daemon implements Common {
         var list = s.toList();
         Collections.sort(list);
         return Sequence.ofEntire(list);
+    }
+
+    public static Sequence<String> lines(String str) {
+        return Sequence.ofEntire(() -> str.lines().iterator());
     }
 
     public static Sequence<Integer> letters(String str) {

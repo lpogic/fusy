@@ -3,35 +3,35 @@ package fusy.setup;
 import java.io.PrintStream;
 import java.util.Scanner;
 
-public record FusyInOut (Scanner scanner, PrintStream printer, PrintStream err) {
+public record FusyInOut (Scanner in, PrintStream out, PrintStream err) {
 
     public String readln() {
-        return scanner != null ? scanner.nextLine() : "";
+        return in != null ? in.nextLine() : "";
     }
 
     public String readln(String prompt) {
-        printer.print(prompt);
+        out.print(prompt);
         return readln();
     }
 
     public void print(Object o) {
-        printer.print(o);
+        out.print(o);
     }
 
     public void println(Object o) {
-        printer.println(o);
+        out.println(o);
     }
 
     public void println() {
-        printer.println();
+        out.println();
     }
 
     public void prinf(String format, Object ... objects) {
-        printer.printf(format, objects);
+        out.printf(format, objects);
     }
 
     public void prinfln(String format, Object ... objects) {
-        printer.printf(format + "%n", objects);
+        out.printf(format + "%n", objects);
     }
 
     public void hitException(Exception e) {

@@ -84,17 +84,16 @@ public class FusyUnix implements Fusy {
     }
 
     @Override
-    public void showLastCompiledSource() throws IOException, InterruptedException {
+    public void showLastCompiledSource() {
         var pb = new ProcessBuilder();
         var cmd = new ArrayList<String>();
         cmd.add("less");
         cmd.add(home + "/fusy.java");
-        Process process = pb.
-                command(cmd).
-                directory(new File(".")).
-                inheritIO().
-                start();
-        process.waitFor();
+        try {
+            pb.command(cmd).directory(new File(".")).inheritIO().start().waitFor();
+        } catch (InterruptedException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public FusyThread chooseFile(Consumer<String> fileConsumer) {
@@ -154,7 +153,11 @@ public class FusyUnix implements Fusy {
     }
 
     @Override
-    public void cleanConsole() throws IOException, InterruptedException {
-        cmd("clear");
+    public void cleanConsole() {
+        try {
+            cmd("clear");
+        } catch (IOException | InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 }

@@ -22,6 +22,7 @@ public class FusDebugger extends FusProcessor {
     int autoVar;
 
     Subject classpath;
+    boolean enableAssertions;
 
     @Override
     public void getReady() {
@@ -32,6 +33,7 @@ public class FusDebugger extends FusProcessor {
         sources = $();
         autoVar = 1;
         classpath = $();
+        enableAssertions = false;
     }
 
     public void pushSource(String source) {
@@ -246,6 +248,9 @@ public class FusDebugger extends FusProcessor {
                         if(!spl[i].isBlank()) classpath.set(spl[i]);
                     }
                 }
+                case "assert" -> {
+                    enableAssertions = true;
+                }
                 default -> {
                     throw new DebuggerException("Undefined compiler action '" + str + "'.");
                 }
@@ -259,5 +264,9 @@ public class FusDebugger extends FusProcessor {
         if(c.hasNext()) sb.append(c.next());
         for(var s : c) sb.append(";").append(s);
         return sb.toString();
+    }
+
+    public boolean assertionsEnabled() {
+        return enableAssertions;
     }
 }
